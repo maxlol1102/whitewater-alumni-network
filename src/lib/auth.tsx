@@ -9,15 +9,15 @@ export type IdentityKey =
   | "disabled";
 
 export const IDENTITY_LABEL: Record<IdentityKey, string> = {
-  super_admin: "Admin",
+  admin: "Admin",
   faculty_user: "Faculty User",
   student_user: "Student User",
-  invited: "Invited (no access)",
-  disabled: "Disabled (no access)",
+  invited: "Invited User (no access)",
+  disabled: "Disabled User (no access)",
 };
 
 const IDENTITY_USER_ID: Record<IdentityKey, string> = {
-  super_admin: "u-super",
+  admin: "u-admin",
   faculty_user: "u-fac-1",
   student_user: "u-stu-1",
   invited: "u-inv-1",
