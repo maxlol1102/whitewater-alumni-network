@@ -195,10 +195,10 @@ export const MOCK_SURVEY_RESPONSES: SurveyResponse[] = Array.from({ length: 40 }
 }));
 
 const AUDIT_ACTIONS: Array<{ action: AuditAction; entity_type: string; severity: AuditLog["severity"]; summary: string }> = [
-  { action: "user.invited", entity_type: "user", severity: "info", summary: "Invited new staff (faculty)" },
+  { action: "user.invited", entity_type: "user", severity: "info", summary: "Invited new faculty user" },
   { action: "user.accepted_invite", entity_type: "user", severity: "info", summary: "User accepted invitation" },
-  { action: "user.account_role_changed", entity_type: "user", severity: "warning", summary: "Changed account role from staff to super_admin" },
-  { action: "user.category_changed", entity_type: "user", severity: "warning", summary: "Changed department role from student to faculty" },
+  { action: "user.status_changed", entity_type: "user", severity: "warning", summary: "Changed status from invited to active" },
+  { action: "user.category_changed", entity_type: "user", severity: "warning", summary: "Changed user category from student to faculty" },
   { action: "user.disabled", entity_type: "user", severity: "warning", summary: "Disabled user account" },
   { action: "user.reactivated", entity_type: "user", severity: "info", summary: "Reactivated user account" },
   { action: "alumni.created", entity_type: "alumni", severity: "info", summary: "Created new alumni record" },
