@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, KeyRound, ShieldCheck } from "lucide-react";
-import { useAuth, isActive } from "@/lib/auth";
+import { GraduationCap, KeyRound, ShieldCheck, ChevronDown } from "lucide-react";
+import { useAuth, isActive, identityOf, type IdentityKey } from "@/lib/auth";
+import { MOCK_USERS } from "@/mocks";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -19,22 +20,46 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const DEMO_ACCOUNTS: { email: string; label: string }[] = [
+  { email: "SubediD30@uww.edu", label: "Admin" },
+  { email: "morgan.choi@uww.edu", label: "Faculty user" },
+  { email: "riley.nguyen@uww.edu", label: "Student user" },
+  { email: "sky.anderson@uww.edu", label: "Invited (no access)" },
+];
+
 function LoginPage() {
-  const { user } = useAuth();
+  const { user, signInAs } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     if (isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
 
+  function signInWithEmail(targetEmail: string) {
+    const match = MOCK_USERS.find(
+      (m) => m.email.toLowerCase() === targetEmail.trim().toLowerCase(),
+    );
+    if (!match) {
+      setError("No account found with that email.");
+      return;
+    }
+    const id: IdentityKey = identityOf(match);
+    signInAs(id);
+    if (match.status === "active") navigate({ to: "/dashboard" });
+    else setError(`This account is ${match.status} and cannot access the app.`);
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError("Invalid email or password");
+    setError(null);
+    signInWithEmail(email);
   }
+
 
   return (
     <div className="min-h-screen bg-background text-foreground grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
@@ -122,7 +147,36 @@ function LoginPage() {
                   SSO
                 </button>
               </div>
+
+              {/* Demo accounts (mock auth) */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDemo((s) => !s)}
+                  className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <span>Use a demo account</span>
+                  <ChevronDown className={`size-3.5 transition-transform ${showDemo ? "rotate-180" : ""}`} />
+                </button>
+                {showDemo && (
+                  <ul className="mt-2 rounded-md border border-border divide-y divide-border bg-card">
+                    {DEMO_ACCOUNTS.map((a) => (
+                      <li key={a.email}>
+                        <button
+                          type="button"
+                          onClick={() => { setEmail(a.email); setPassword("demo"); signInWithEmail(a.email); }}
+                          className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-surface-100 transition-colors"
+                        >
+                          <span className="text-sm">{a.label}</span>
+                          <span className="text-xs text-muted-foreground font-mono">{a.email}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </form>
+
           </div>
         </div>
 
