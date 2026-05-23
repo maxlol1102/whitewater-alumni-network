@@ -106,10 +106,9 @@ function LandingLoginPage() {
       </main>
 
       <footer id="about" className="py-8 px-6 text-center text-xs text-muted-foreground">
-        © {new Action()} · UW–Whitewater Department of Computer Science
+        © {new Date().getFullYear()} · UW–Whitewater Department of Computer Science
       </footer>
     </div>
   );
 }
 
-function Action() { return new Date().getFullYear() as unknown as object; }
