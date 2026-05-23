@@ -4,20 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { AccountRole, DepartmentRole } from "@/mocks";
+import type { AccountRole, UserCategory } from "@/mocks";
 
 export type InvitePayload = {
   full_name: string;
   email: string;
   account_role: AccountRole;
-  department_role: DepartmentRole | null;
+  user_category: UserCategory | null;
 };
 
 export function InviteUserDialog({ onSubmit, onCancel }: { onSubmit: (p: InvitePayload) => void; onCancel: () => void }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [accountRole, setAccountRole] = useState<AccountRole>("staff");
-  const [departmentRole, setDepartmentRole] = useState<DepartmentRole>("faculty");
+  const [accountRole, setAccountRole] = useState<AccountRole>("user");
+  const [userCategory, setUserCategory] = useState<UserCategory>("faculty");
   const [error, setError] = useState<string | null>(null);
 
   function handle(e: React.FormEvent) {
@@ -25,12 +25,12 @@ export function InviteUserDialog({ onSubmit, onCancel }: { onSubmit: (p: InviteP
     setError(null);
     if (fullName.trim().length < 2) return setError("Full name is required.");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setError("Enter a valid email.");
-    if (accountRole === "staff" && !departmentRole) return setError("Department role is required for staff.");
+    if (accountRole === "user" && !userCategory) return setError("Department role is required for staff.");
     onSubmit({
       full_name: fullName.trim(),
       email: email.trim().toLowerCase(),
       account_role: accountRole,
-      department_role: accountRole === "staff" ? departmentRole : null,
+      user_category: accountRole === "user" ? userCategory : null,
     });
   }
 
@@ -54,15 +54,15 @@ export function InviteUserDialog({ onSubmit, onCancel }: { onSubmit: (p: InviteP
           <Select value={accountRole} onValueChange={(v) => setAccountRole(v as AccountRole)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="super_admin">Super Admin</SelectItem>
-              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="user">Staff</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        {accountRole === "staff" && (
+        {accountRole === "user" && (
           <div className="space-y-1.5">
             <Label>Department role</Label>
-            <Select value={departmentRole} onValueChange={(v) => setDepartmentRole(v as DepartmentRole)}>
+            <Select value={userCategory} onValueChange={(v) => setUserCategory(v as UserCategory)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="faculty">Faculty</SelectItem>

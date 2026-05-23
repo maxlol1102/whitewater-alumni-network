@@ -2,24 +2,24 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { MOCK_USERS, type Profile } from "@/mocks";
 
 export type IdentityKey =
-  | "super_admin"
-  | "staff_faculty"
-  | "staff_student"
+  | "admin"
+  | "faculty_user"
+  | "student_user"
   | "invited"
   | "disabled";
 
 export const IDENTITY_LABEL: Record<IdentityKey, string> = {
-  super_admin: "Super Admin",
-  staff_faculty: "Staff — Faculty",
-  staff_student: "Staff — Student",
+  super_admin: "Admin",
+  faculty_user: "Faculty User",
+  student_user: "Student User",
   invited: "Invited (no access)",
   disabled: "Disabled (no access)",
 };
 
 const IDENTITY_USER_ID: Record<IdentityKey, string> = {
   super_admin: "u-super",
-  staff_faculty: "u-fac-1",
-  staff_student: "u-stu-1",
+  faculty_user: "u-fac-1",
+  student_user: "u-stu-1",
   invited: "u-inv-1",
   disabled: "u-dis-1",
 };
@@ -70,8 +70,8 @@ export function useAuth() {
 export function identityOf(user: Profile): IdentityKey {
   if (user.status === "invited") return "invited";
   if (user.status === "disabled" || user.status === "deleted") return "disabled";
-  if (user.account_role === "super_admin") return "super_admin";
-  return user.department_role === "student" ? "staff_student" : "staff_faculty";
+  if (user.account_role === "admin") return "admin";
+  return user.user_category === "student" ? "student_user" : "faculty_user";
 }
 
 export function isActive(user: Profile | null | undefined): user is Profile {
@@ -79,7 +79,7 @@ export function isActive(user: Profile | null | undefined): user is Profile {
 }
 
 /** Routes available to active staff. */
-function staffCanRoute(route: string): boolean {
+function userCanRoute(route: string): boolean {
   return (
     route === "/dashboard" ||
     route.startsWith("/alumni") ||
@@ -89,11 +89,11 @@ function staffCanRoute(route: string): boolean {
 
 export function canAccess(user: Profile | null | undefined, route: string): boolean {
   if (!isActive(user)) return false;
-  if (user.account_role === "super_admin") return true;
-  return staffCanRoute(route);
+  if (user.account_role === "admin") return true;
+  return userCanRoute(route);
 }
 
 /** Only super_admin can mutate domain data. */
 export function canEdit(user: Profile | null | undefined): boolean {
-  return isActive(user) && user.account_role === "super_admin";
+  return isActive(user) && user.account_role === "admin";
 }

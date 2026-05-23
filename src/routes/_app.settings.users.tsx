@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, MoreHorizontal, Search } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
-import { MOCK_USERS, type Profile, type AccountRole, type DepartmentRole, type UserStatus } from "@/mocks";
+import { MOCK_USERS, type Profile, type AccountRole, type UserCategory, type UserStatus } from "@/mocks";
 import { useAuth } from "@/lib/auth";
 import { guardDelete, guardDisable, guardRoleChange } from "@/lib/user-guards";
 import { InviteUserDialog, type InvitePayload } from "@/components/users/InviteUserDialog";
@@ -22,8 +22,8 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/settings/users")({ component: UsersPage });
 
-const ACCOUNT_LABEL: Record<AccountRole, string> = { super_admin: "Super Admin", staff: "Staff" };
-const DEPT_LABEL: Record<DepartmentRole, string> = { faculty: "Faculty", student: "Student" };
+const ACCOUNT_LABEL: Record<AccountRole, string> = { super_admin: "Admin", staff: "Staff" };
+const DEPT_LABEL: Record<UserCategory, string> = { faculty: "Faculty", student: "Student" };
 const STATUS_STYLES: Record<UserStatus, string> = {
   invited: "bg-amber-100 text-amber-800 border-amber-200",
   active: "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -38,7 +38,7 @@ function fmtDate(d: string | null) { return d ? new Date(d).toLocaleDateString()
 function UsersPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => { if (user && user.account_role !== "admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
 
   const [users, setUsers] = useState<Profile[]>(MOCK_USERS);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -57,7 +57,7 @@ function UsersPage() {
     if (!showDeleted && u.status === "deleted") return false;
     if (fStatus !== "all" && u.status !== fStatus) return false;
     if (fAccount !== "all" && u.account_role !== fAccount) return false;
-    if (fDept !== "all" && u.department_role !== fDept) return false;
+    if (fDept !== "all" && u.user_category !== fDept) return false;
     if (q && !`${u.full_name} ${u.email}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   }), [users, showDeleted, fStatus, fAccount, fDept, q]);
@@ -82,7 +82,7 @@ function UsersPage() {
       full_name: p.full_name,
       email: p.email,
       account_role: p.account_role,
-      department_role: p.department_role,
+      user_category: p.user_category,
       status: "invited",
       invited_at: now,
       accepted_at: null,
@@ -92,29 +92,29 @@ function UsersPage() {
       created_at: now,
     };
     setUsers((prev) => [newUser, ...prev]);
-    audit("user.invited", `Invited ${p.email} as ${p.account_role}${p.department_role ? ` (${p.department_role})` : ""}`);
+    audit("user.invited", `Invited ${p.email} as ${p.account_role}${p.user_category ? ` (${p.user_category})` : ""}`);
     toast.success(`Invitation sent to ${p.email}.`);
     setInviteOpen(false);
   }
 
   function handleEdit(target: Profile, p: EditPayload) {
-    const check = guardRoleChange(user!, target, p.account_role, p.department_role, users);
+    const check = guardRoleChange(user!, target, p.account_role, p.user_category, users);
     if (!check.ok) {
       audit("permission.denied", check.reason);
       toast.error(check.reason);
       return;
     }
-    const before = { full_name: target.full_name, account_role: target.account_role, department_role: target.department_role, status: target.status };
+    const before = { full_name: target.full_name, account_role: target.account_role, user_category: target.user_category, status: target.status };
     setUsers((prev) => prev.map((x) => x.id === target.id ? {
       ...x,
       full_name: p.full_name,
       account_role: p.account_role,
-      department_role: p.department_role,
+      user_category: p.user_category,
       status: p.status,
       disabled_at: p.status === "disabled" ? (x.disabled_at ?? new Date().toISOString()) : null,
     } : x));
     if (before.account_role !== p.account_role) audit("user.account_role_changed", `${target.email}: ${before.account_role} → ${p.account_role}`);
-    if (before.department_role !== p.department_role) audit("user.department_role_changed", `${target.email}: ${before.department_role ?? "—"} → ${p.department_role ?? "—"}`);
+    if (before.user_category !== p.user_category) audit("user.category_changed", `${target.email}: ${before.user_category ?? "—"} → ${p.user_category ?? "—"}`);
     if (before.full_name !== p.full_name || before.status !== p.status) audit("user.updated", `${target.email}: profile updated`);
     toast.success("User updated.");
     setEditUser(null);
@@ -190,8 +190,8 @@ function UsersPage() {
             <SelectTrigger><SelectValue placeholder="Account role" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All account roles</SelectItem>
-              <SelectItem value="super_admin">Super Admin</SelectItem>
-              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="user">Staff</SelectItem>
             </SelectContent>
           </Select>
           <Select value={fDept} onValueChange={setFDept}>
@@ -234,7 +234,7 @@ function UsersPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground font-mono text-xs">{u.email}</TableCell>
                   <TableCell><Badge variant="outline">{ACCOUNT_LABEL[u.account_role]}</Badge></TableCell>
-                  <TableCell>{u.department_role ? <Badge variant="secondary">{DEPT_LABEL[u.department_role]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell>{u.user_category ? <Badge variant="secondary">{DEPT_LABEL[u.user_category]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell><Badge className={STATUS_STYLES[u.status]}>{u.status}</Badge></TableCell>
                   <TableCell className="text-muted-foreground text-xs">{fmtDate(u.invited_at)}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{fmtDate(u.accepted_at)}</TableCell>

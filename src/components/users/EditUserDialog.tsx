@@ -4,19 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { AccountRole, DepartmentRole, Profile, UserStatus } from "@/mocks";
+import type { AccountRole, UserCategory, Profile, UserStatus } from "@/mocks";
 
 export type EditPayload = {
   full_name: string;
   account_role: AccountRole;
-  department_role: DepartmentRole | null;
+  user_category: UserCategory | null;
   status: UserStatus;
 };
 
 export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; onSubmit: (p: EditPayload) => void; onCancel: () => void }) {
   const [fullName, setFullName] = useState(user.full_name);
   const [accountRole, setAccountRole] = useState<AccountRole>(user.account_role);
-  const [departmentRole, setDepartmentRole] = useState<DepartmentRole>(user.department_role ?? "faculty");
+  const [userCategory, setUserCategory] = useState<UserCategory>(user.user_category ?? "faculty");
   const [status, setStatus] = useState<UserStatus>(user.status);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +27,7 @@ export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; on
     onSubmit({
       full_name: fullName.trim(),
       account_role: accountRole,
-      department_role: accountRole === "staff" ? departmentRole : null,
+      user_category: accountRole === "user" ? userCategory : null,
       status,
     });
   }
@@ -52,15 +52,15 @@ export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; on
             <Select value={accountRole} onValueChange={(v) => setAccountRole(v as AccountRole)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">Staff</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          {accountRole === "staff" && (
+          {accountRole === "user" && (
             <div className="space-y-1.5">
               <Label>Department role</Label>
-              <Select value={departmentRole} onValueChange={(v) => setDepartmentRole(v as DepartmentRole)}>
+              <Select value={userCategory} onValueChange={(v) => setUserCategory(v as UserCategory)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="faculty">Faculty</SelectItem>

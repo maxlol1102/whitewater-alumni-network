@@ -1,7 +1,7 @@
 export const MOCK_MODE = true;
 
-export type AccountRole = "super_admin" | "staff";
-export type DepartmentRole = "faculty" | "student";
+export type AccountRole = "admin" | "user";
+export type UserCategory = "faculty" | "student";
 export type UserStatus = "invited" | "active" | "disabled" | "deleted";
 
 // Backwards-compat alias (deprecated; equals AccountRole)
@@ -12,7 +12,7 @@ export type Profile = {
   full_name: string;
   email: string;
   account_role: AccountRole;
-  department_role: DepartmentRole | null;
+  user_category: UserCategory | null;
   status: UserStatus;
   invited_at: string | null;
   accepted_at: string | null;
@@ -83,7 +83,7 @@ export type AuditAction =
   | "user.accepted_invite"
   | "user.updated"
   | "user.account_role_changed"
-  | "user.department_role_changed"
+  | "user.category_changed"
   | "user.disabled"
   | "user.reactivated"
   | "user.deleted"
@@ -118,13 +118,13 @@ export type AuditLog = {
 };
 
 export const MOCK_USERS: Profile[] = [
-  { id: "u-super", full_name: "Pat Reynolds", email: "pat.reynolds@uww.edu", account_role: "super_admin", department_role: null, status: "active", invited_at: "2024-01-10T10:00:00Z", accepted_at: "2024-01-12T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-22T14:21:00Z", created_at: "2024-01-12T10:00:00Z" },
-  { id: "u-fac-1", full_name: "Dr. Morgan Choi", email: "morgan.choi@uww.edu", account_role: "staff", department_role: "faculty", status: "active", invited_at: "2024-04-28T10:00:00Z", accepted_at: "2024-05-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-20T19:02:00Z", created_at: "2024-05-01T10:00:00Z" },
-  { id: "u-fac-2", full_name: "Dr. Alex Park", email: "alex.park@uww.edu", account_role: "staff", department_role: "faculty", status: "active", invited_at: "2024-08-29T10:00:00Z", accepted_at: "2024-09-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-18T12:00:00Z", created_at: "2024-09-01T10:00:00Z" },
-  { id: "u-stu-1", full_name: "Riley Nguyen", email: "riley.nguyen@uww.edu", account_role: "staff", department_role: "student", status: "active", invited_at: "2025-08-10T10:00:00Z", accepted_at: "2025-08-15T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-19T11:45:00Z", created_at: "2025-08-15T10:00:00Z" },
-  { id: "u-stu-2", full_name: "Jamie Lee", email: "jamie.lee@uww.edu", account_role: "staff", department_role: "student", status: "active", invited_at: "2025-09-20T10:00:00Z", accepted_at: "2025-09-22T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-21T08:11:00Z", created_at: "2025-09-22T10:00:00Z" },
-  { id: "u-inv-1", full_name: "Sky Anderson", email: "sky.anderson@uww.edu", account_role: "staff", department_role: "faculty", status: "invited", invited_at: "2026-05-20T15:00:00Z", accepted_at: null, disabled_at: null, deleted_at: null, last_sign_in_at: null, created_at: "2026-05-20T15:00:00Z" },
-  { id: "u-dis-1", full_name: "Drew Carter", email: "drew.carter@uww.edu", account_role: "staff", department_role: "student", status: "disabled", invited_at: "2025-02-01T10:00:00Z", accepted_at: "2025-02-03T10:00:00Z", disabled_at: "2026-04-10T10:00:00Z", deleted_at: null, last_sign_in_at: "2026-04-09T13:00:00Z", created_at: "2025-02-03T10:00:00Z" },
+  { id: "u-super", full_name: "Pat Reynolds", email: "pat.reynolds@uww.edu", account_role: "admin", user_category: null, status: "active", invited_at: "2024-01-10T10:00:00Z", accepted_at: "2024-01-12T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-22T14:21:00Z", created_at: "2024-01-12T10:00:00Z" },
+  { id: "u-fac-1", full_name: "Dr. Morgan Choi", email: "morgan.choi@uww.edu", account_role: "user", user_category: "faculty", status: "active", invited_at: "2024-04-28T10:00:00Z", accepted_at: "2024-05-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-20T19:02:00Z", created_at: "2024-05-01T10:00:00Z" },
+  { id: "u-fac-2", full_name: "Dr. Alex Park", email: "alex.park@uww.edu", account_role: "user", user_category: "faculty", status: "active", invited_at: "2024-08-29T10:00:00Z", accepted_at: "2024-09-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-18T12:00:00Z", created_at: "2024-09-01T10:00:00Z" },
+  { id: "u-stu-1", full_name: "Riley Nguyen", email: "riley.nguyen@uww.edu", account_role: "user", user_category: "student", status: "active", invited_at: "2025-08-10T10:00:00Z", accepted_at: "2025-08-15T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-19T11:45:00Z", created_at: "2025-08-15T10:00:00Z" },
+  { id: "u-stu-2", full_name: "Jamie Lee", email: "jamie.lee@uww.edu", account_role: "user", user_category: "student", status: "active", invited_at: "2025-09-20T10:00:00Z", accepted_at: "2025-09-22T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-21T08:11:00Z", created_at: "2025-09-22T10:00:00Z" },
+  { id: "u-inv-1", full_name: "Sky Anderson", email: "sky.anderson@uww.edu", account_role: "user", user_category: "faculty", status: "invited", invited_at: "2026-05-20T15:00:00Z", accepted_at: null, disabled_at: null, deleted_at: null, last_sign_in_at: null, created_at: "2026-05-20T15:00:00Z" },
+  { id: "u-dis-1", full_name: "Drew Carter", email: "drew.carter@uww.edu", account_role: "user", user_category: "student", status: "disabled", invited_at: "2025-02-01T10:00:00Z", accepted_at: "2025-02-03T10:00:00Z", disabled_at: "2026-04-10T10:00:00Z", deleted_at: null, last_sign_in_at: "2026-04-09T13:00:00Z", created_at: "2025-02-03T10:00:00Z" },
 ];
 
 const COMPANIES = ["Epic Systems", "Microsoft", "Google", "Northwestern Mutual", "GE Healthcare", "Rockwell Automation", "Kohl's", "American Family Insurance", "Generac", "Fiserv", "Direct Supply", "Trek Bicycle"];
@@ -198,7 +198,7 @@ const AUDIT_ACTIONS: Array<{ action: AuditAction; entity_type: string; severity:
   { action: "user.invited", entity_type: "user", severity: "info", summary: "Invited new staff (faculty)" },
   { action: "user.accepted_invite", entity_type: "user", severity: "info", summary: "User accepted invitation" },
   { action: "user.account_role_changed", entity_type: "user", severity: "warning", summary: "Changed account role from staff to super_admin" },
-  { action: "user.department_role_changed", entity_type: "user", severity: "warning", summary: "Changed department role from student to faculty" },
+  { action: "user.category_changed", entity_type: "user", severity: "warning", summary: "Changed department role from student to faculty" },
   { action: "user.disabled", entity_type: "user", severity: "warning", summary: "Disabled user account" },
   { action: "user.reactivated", entity_type: "user", severity: "info", summary: "Reactivated user account" },
   { action: "alumni.created", entity_type: "alumni", severity: "info", summary: "Created new alumni record" },

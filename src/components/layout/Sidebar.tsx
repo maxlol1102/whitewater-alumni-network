@@ -9,16 +9,16 @@ import type { AccountRole } from "@/mocks";
 
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: AccountRole[]; section: string };
 const NAV: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "staff"], section: "Overview" },
-  { to: "/alumni", label: "Alumni", icon: Users, roles: ["super_admin", "staff"], section: "Engage" },
-  { to: "/mentorship", label: "Mentorship", icon: Handshake, roles: ["super_admin", "staff"], section: "Engage" },
-  { to: "/campaigns", label: "Campaigns", icon: Mail, roles: ["super_admin"], section: "Engage" },
-  { to: "/surveys", label: "Surveys", icon: ClipboardList, roles: ["super_admin"], section: "Engage" },
-  { to: "/settings/users", label: "Users", icon: Settings, roles: ["super_admin"], section: "Admin" },
-  { to: "/settings/audit-log", label: "Audit log", icon: ScrollText, roles: ["super_admin"], section: "Admin" },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "user"], section: "Overview" },
+  { to: "/alumni", label: "Alumni", icon: Users, roles: ["admin", "user"], section: "Engage" },
+  { to: "/mentorship", label: "Mentorship", icon: Handshake, roles: ["admin", "user"], section: "Engage" },
+  { to: "/campaigns", label: "Campaigns", icon: Mail, roles: ["admin"], section: "Engage" },
+  { to: "/surveys", label: "Surveys", icon: ClipboardList, roles: ["admin"], section: "Engage" },
+  { to: "/settings/users", label: "Users", icon: Settings, roles: ["admin"], section: "Admin" },
+  { to: "/settings/audit-log", label: "Audit log", icon: ScrollText, roles: ["admin"], section: "Admin" },
 ];
 
-const SWITCHER: IdentityKey[] = ["super_admin", "staff_faculty", "staff_student", "invited", "disabled"];
+const SWITCHER: IdentityKey[] = ["admin", "faculty_user", "student_user", "invited", "disabled"];
 
 export function Sidebar() {
   const { user, identity, signOut, signInAs } = useAuth();
@@ -114,7 +114,7 @@ export function Sidebar() {
       <div className="px-4 pb-4 pt-3 border-t border-sidebar-border space-y-3">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1.5 px-1">View as</div>
-          <Select value={identity ?? "super_admin"} onValueChange={(v) => { signInAs(v as IdentityKey); navigate({ to: "/dashboard" }); }}>
+          <Select value={identity ?? "admin"} onValueChange={(v) => { signInAs(v as IdentityKey); navigate({ to: "/dashboard" }); }}>
             <SelectTrigger className="h-8 text-xs rounded-md bg-background">
               <SelectValue />
             </SelectTrigger>
@@ -134,7 +134,7 @@ export function Sidebar() {
               <div className="font-medium truncate">{user.full_name}</div>
               <div className="text-muted-foreground truncate font-mono text-[10px]">
                 {user.account_role}
-                {user.department_role ? ` · ${user.department_role}` : ""}
+                {user.user_category ? ` · ${user.user_category}` : ""}
               </div>
             </div>
           </div>
