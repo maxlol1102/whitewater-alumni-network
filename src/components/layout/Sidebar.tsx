@@ -1,9 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, Users, Handshake, Mail, ClipboardList, Settings, ScrollText, LogOut, Sun, Moon, GraduationCap, Search } from "lucide-react";
-import { useAuth, IDENTITY_LABEL, type IdentityKey } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { AccountRole } from "@/mocks";
 
@@ -18,10 +17,9 @@ const NAV: NavItem[] = [
   { to: "/settings/audit-log", label: "Audit log", icon: ScrollText, roles: ["admin"], section: "Admin" },
 ];
 
-const SWITCHER: IdentityKey[] = ["admin", "faculty_user", "student_user", "invited", "disabled"];
-
 export function Sidebar() {
-  const { user, identity, signOut, signInAs } = useAuth();
+  const { user, signOut } = useAuth();
+
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
