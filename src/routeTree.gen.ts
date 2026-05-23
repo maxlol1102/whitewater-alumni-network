@@ -9,38 +9,269 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppMentorshipRouteImport } from './routes/_app.mentorship'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppSurveysIndexRouteImport } from './routes/_app.surveys.index'
+import { Route as AppCampaignsIndexRouteImport } from './routes/_app.campaigns.index'
+import { Route as AppAlumniIndexRouteImport } from './routes/_app.alumni.index'
+import { Route as AppSurveysNewRouteImport } from './routes/_app.surveys.new'
+import { Route as AppSurveysIdRouteImport } from './routes/_app.surveys.$id'
+import { Route as AppSettingsUsersRouteImport } from './routes/_app.settings.users'
+import { Route as AppSettingsAuditLogRouteImport } from './routes/_app.settings.audit-log'
+import { Route as AppCampaignsNewRouteImport } from './routes/_app.campaigns.new'
+import { Route as AppCampaignsIdRouteImport } from './routes/_app.campaigns.$id'
+import { Route as AppAlumniNewRouteImport } from './routes/_app.alumni.new'
+import { Route as AppAlumniIdRouteImport } from './routes/_app.alumni.$id'
+import { Route as AppSurveysIdEditRouteImport } from './routes/_app.surveys.$id.edit'
+import { Route as AppCampaignsIdEditRouteImport } from './routes/_app.campaigns.$id.edit'
+import { Route as AppAlumniIdEditRouteImport } from './routes/_app.alumni.$id.edit'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppMentorshipRoute = AppMentorshipRouteImport.update({
+  id: '/mentorship',
+  path: '/mentorship',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSurveysIndexRoute = AppSurveysIndexRouteImport.update({
+  id: '/surveys/',
+  path: '/surveys/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampaignsIndexRoute = AppCampaignsIndexRouteImport.update({
+  id: '/campaigns/',
+  path: '/campaigns/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlumniIndexRoute = AppAlumniIndexRouteImport.update({
+  id: '/alumni/',
+  path: '/alumni/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSurveysNewRoute = AppSurveysNewRouteImport.update({
+  id: '/surveys/new',
+  path: '/surveys/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSurveysIdRoute = AppSurveysIdRouteImport.update({
+  id: '/surveys/$id',
+  path: '/surveys/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
+  id: '/settings/users',
+  path: '/settings/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsAuditLogRoute = AppSettingsAuditLogRouteImport.update({
+  id: '/settings/audit-log',
+  path: '/settings/audit-log',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampaignsNewRoute = AppCampaignsNewRouteImport.update({
+  id: '/campaigns/new',
+  path: '/campaigns/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampaignsIdRoute = AppCampaignsIdRouteImport.update({
+  id: '/campaigns/$id',
+  path: '/campaigns/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlumniNewRoute = AppAlumniNewRouteImport.update({
+  id: '/alumni/new',
+  path: '/alumni/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlumniIdRoute = AppAlumniIdRouteImport.update({
+  id: '/alumni/$id',
+  path: '/alumni/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSurveysIdEditRoute = AppSurveysIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AppSurveysIdRoute,
+} as any)
+const AppCampaignsIdEditRoute = AppCampaignsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AppCampaignsIdRoute,
+} as any)
+const AppAlumniIdEditRoute = AppAlumniIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AppAlumniIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/mentorship': typeof AppMentorshipRoute
+  '/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/alumni/new': typeof AppAlumniNewRoute
+  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/new': typeof AppCampaignsNewRoute
+  '/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/settings/users': typeof AppSettingsUsersRoute
+  '/surveys/$id': typeof AppSurveysIdRouteWithChildren
+  '/surveys/new': typeof AppSurveysNewRoute
+  '/alumni/': typeof AppAlumniIndexRoute
+  '/campaigns/': typeof AppCampaignsIndexRoute
+  '/surveys/': typeof AppSurveysIndexRoute
+  '/alumni/$id/edit': typeof AppAlumniIdEditRoute
+  '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
+  '/surveys/$id/edit': typeof AppSurveysIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/mentorship': typeof AppMentorshipRoute
+  '/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/alumni/new': typeof AppAlumniNewRoute
+  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/new': typeof AppCampaignsNewRoute
+  '/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/settings/users': typeof AppSettingsUsersRoute
+  '/surveys/$id': typeof AppSurveysIdRouteWithChildren
+  '/surveys/new': typeof AppSurveysNewRoute
+  '/alumni': typeof AppAlumniIndexRoute
+  '/campaigns': typeof AppCampaignsIndexRoute
+  '/surveys': typeof AppSurveysIndexRoute
+  '/alumni/$id/edit': typeof AppAlumniIdEditRoute
+  '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
+  '/surveys/$id/edit': typeof AppSurveysIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/mentorship': typeof AppMentorshipRoute
+  '/_app/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/_app/alumni/new': typeof AppAlumniNewRoute
+  '/_app/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/_app/campaigns/new': typeof AppCampaignsNewRoute
+  '/_app/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/_app/settings/users': typeof AppSettingsUsersRoute
+  '/_app/surveys/$id': typeof AppSurveysIdRouteWithChildren
+  '/_app/surveys/new': typeof AppSurveysNewRoute
+  '/_app/alumni/': typeof AppAlumniIndexRoute
+  '/_app/campaigns/': typeof AppCampaignsIndexRoute
+  '/_app/surveys/': typeof AppSurveysIndexRoute
+  '/_app/alumni/$id/edit': typeof AppAlumniIdEditRoute
+  '/_app/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
+  '/_app/surveys/$id/edit': typeof AppSurveysIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/mentorship'
+    | '/alumni/$id'
+    | '/alumni/new'
+    | '/campaigns/$id'
+    | '/campaigns/new'
+    | '/settings/audit-log'
+    | '/settings/users'
+    | '/surveys/$id'
+    | '/surveys/new'
+    | '/alumni/'
+    | '/campaigns/'
+    | '/surveys/'
+    | '/alumni/$id/edit'
+    | '/campaigns/$id/edit'
+    | '/surveys/$id/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/mentorship'
+    | '/alumni/$id'
+    | '/alumni/new'
+    | '/campaigns/$id'
+    | '/campaigns/new'
+    | '/settings/audit-log'
+    | '/settings/users'
+    | '/surveys/$id'
+    | '/surveys/new'
+    | '/alumni'
+    | '/campaigns'
+    | '/surveys'
+    | '/alumni/$id/edit'
+    | '/campaigns/$id/edit'
+    | '/surveys/$id/edit'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/login'
+    | '/_app/dashboard'
+    | '/_app/mentorship'
+    | '/_app/alumni/$id'
+    | '/_app/alumni/new'
+    | '/_app/campaigns/$id'
+    | '/_app/campaigns/new'
+    | '/_app/settings/audit-log'
+    | '/_app/settings/users'
+    | '/_app/surveys/$id'
+    | '/_app/surveys/new'
+    | '/_app/alumni/'
+    | '/_app/campaigns/'
+    | '/_app/surveys/'
+    | '/_app/alumni/$id/edit'
+    | '/_app/campaigns/$id/edit'
+    | '/_app/surveys/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +279,196 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/mentorship': {
+      id: '/_app/mentorship'
+      path: '/mentorship'
+      fullPath: '/mentorship'
+      preLoaderRoute: typeof AppMentorshipRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/surveys/': {
+      id: '/_app/surveys/'
+      path: '/surveys'
+      fullPath: '/surveys/'
+      preLoaderRoute: typeof AppSurveysIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/': {
+      id: '/_app/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns/'
+      preLoaderRoute: typeof AppCampaignsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alumni/': {
+      id: '/_app/alumni/'
+      path: '/alumni'
+      fullPath: '/alumni/'
+      preLoaderRoute: typeof AppAlumniIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/surveys/new': {
+      id: '/_app/surveys/new'
+      path: '/surveys/new'
+      fullPath: '/surveys/new'
+      preLoaderRoute: typeof AppSurveysNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/surveys/$id': {
+      id: '/_app/surveys/$id'
+      path: '/surveys/$id'
+      fullPath: '/surveys/$id'
+      preLoaderRoute: typeof AppSurveysIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/users': {
+      id: '/_app/settings/users'
+      path: '/settings/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof AppSettingsUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/audit-log': {
+      id: '/_app/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/settings/audit-log'
+      preLoaderRoute: typeof AppSettingsAuditLogRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/new': {
+      id: '/_app/campaigns/new'
+      path: '/campaigns/new'
+      fullPath: '/campaigns/new'
+      preLoaderRoute: typeof AppCampaignsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/$id': {
+      id: '/_app/campaigns/$id'
+      path: '/campaigns/$id'
+      fullPath: '/campaigns/$id'
+      preLoaderRoute: typeof AppCampaignsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alumni/new': {
+      id: '/_app/alumni/new'
+      path: '/alumni/new'
+      fullPath: '/alumni/new'
+      preLoaderRoute: typeof AppAlumniNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alumni/$id': {
+      id: '/_app/alumni/$id'
+      path: '/alumni/$id'
+      fullPath: '/alumni/$id'
+      preLoaderRoute: typeof AppAlumniIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/surveys/$id/edit': {
+      id: '/_app/surveys/$id/edit'
+      path: '/edit'
+      fullPath: '/surveys/$id/edit'
+      preLoaderRoute: typeof AppSurveysIdEditRouteImport
+      parentRoute: typeof AppSurveysIdRoute
+    }
+    '/_app/campaigns/$id/edit': {
+      id: '/_app/campaigns/$id/edit'
+      path: '/edit'
+      fullPath: '/campaigns/$id/edit'
+      preLoaderRoute: typeof AppCampaignsIdEditRouteImport
+      parentRoute: typeof AppCampaignsIdRoute
+    }
+    '/_app/alumni/$id/edit': {
+      id: '/_app/alumni/$id/edit'
+      path: '/edit'
+      fullPath: '/alumni/$id/edit'
+      preLoaderRoute: typeof AppAlumniIdEditRouteImport
+      parentRoute: typeof AppAlumniIdRoute
+    }
   }
 }
 
+interface AppAlumniIdRouteChildren {
+  AppAlumniIdEditRoute: typeof AppAlumniIdEditRoute
+}
+
+const AppAlumniIdRouteChildren: AppAlumniIdRouteChildren = {
+  AppAlumniIdEditRoute: AppAlumniIdEditRoute,
+}
+
+const AppAlumniIdRouteWithChildren = AppAlumniIdRoute._addFileChildren(
+  AppAlumniIdRouteChildren,
+)
+
+interface AppCampaignsIdRouteChildren {
+  AppCampaignsIdEditRoute: typeof AppCampaignsIdEditRoute
+}
+
+const AppCampaignsIdRouteChildren: AppCampaignsIdRouteChildren = {
+  AppCampaignsIdEditRoute: AppCampaignsIdEditRoute,
+}
+
+const AppCampaignsIdRouteWithChildren = AppCampaignsIdRoute._addFileChildren(
+  AppCampaignsIdRouteChildren,
+)
+
+interface AppSurveysIdRouteChildren {
+  AppSurveysIdEditRoute: typeof AppSurveysIdEditRoute
+}
+
+const AppSurveysIdRouteChildren: AppSurveysIdRouteChildren = {
+  AppSurveysIdEditRoute: AppSurveysIdEditRoute,
+}
+
+const AppSurveysIdRouteWithChildren = AppSurveysIdRoute._addFileChildren(
+  AppSurveysIdRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppMentorshipRoute: typeof AppMentorshipRoute
+  AppAlumniIdRoute: typeof AppAlumniIdRouteWithChildren
+  AppAlumniNewRoute: typeof AppAlumniNewRoute
+  AppCampaignsIdRoute: typeof AppCampaignsIdRouteWithChildren
+  AppCampaignsNewRoute: typeof AppCampaignsNewRoute
+  AppSettingsAuditLogRoute: typeof AppSettingsAuditLogRoute
+  AppSettingsUsersRoute: typeof AppSettingsUsersRoute
+  AppSurveysIdRoute: typeof AppSurveysIdRouteWithChildren
+  AppSurveysNewRoute: typeof AppSurveysNewRoute
+  AppAlumniIndexRoute: typeof AppAlumniIndexRoute
+  AppCampaignsIndexRoute: typeof AppCampaignsIndexRoute
+  AppSurveysIndexRoute: typeof AppSurveysIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppMentorshipRoute: AppMentorshipRoute,
+  AppAlumniIdRoute: AppAlumniIdRouteWithChildren,
+  AppAlumniNewRoute: AppAlumniNewRoute,
+  AppCampaignsIdRoute: AppCampaignsIdRouteWithChildren,
+  AppCampaignsNewRoute: AppCampaignsNewRoute,
+  AppSettingsAuditLogRoute: AppSettingsAuditLogRoute,
+  AppSettingsUsersRoute: AppSettingsUsersRoute,
+  AppSurveysIdRoute: AppSurveysIdRouteWithChildren,
+  AppSurveysNewRoute: AppSurveysNewRoute,
+  AppAlumniIndexRoute: AppAlumniIndexRoute,
+  AppCampaignsIndexRoute: AppCampaignsIndexRoute,
+  AppSurveysIndexRoute: AppSurveysIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
