@@ -12,10 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppMentorshipRouteImport } from './routes/_app.mentorship'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppCampaignsIndexRouteImport } from './routes/_app.campaigns.index'
 import { Route as AppAlumniIndexRouteImport } from './routes/_app.alumni.index'
+import { Route as AppCampaignsNewRouteImport } from './routes/_app.campaigns.new'
+import { Route as AppCampaignsIdRouteImport } from './routes/_app.campaigns.$id'
 import { Route as AppAlumniNewRouteImport } from './routes/_app.alumni.new'
 import { Route as AppAlumniIdRouteImport } from './routes/_app.alumni.$id'
+import { Route as AppCampaignsIdEditRouteImport } from './routes/_app.campaigns.$id.edit'
 import { Route as AppAlumniIdEditRouteImport } from './routes/_app.alumni.$id.edit'
 
 const LoginRoute = LoginRouteImport.update({
@@ -32,14 +37,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppMentorshipRoute = AppMentorshipRouteImport.update({
+  id: '/mentorship',
+  path: '/mentorship',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCampaignsIndexRoute = AppCampaignsIndexRouteImport.update({
+  id: '/campaigns/',
+  path: '/campaigns/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAlumniIndexRoute = AppAlumniIndexRouteImport.update({
   id: '/alumni/',
   path: '/alumni/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampaignsNewRoute = AppCampaignsNewRouteImport.update({
+  id: '/campaigns/new',
+  path: '/campaigns/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCampaignsIdRoute = AppCampaignsIdRouteImport.update({
+  id: '/campaigns/$id',
+  path: '/campaigns/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAlumniNewRoute = AppAlumniNewRouteImport.update({
@@ -52,6 +77,11 @@ const AppAlumniIdRoute = AppAlumniIdRouteImport.update({
   path: '/alumni/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCampaignsIdEditRoute = AppCampaignsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AppCampaignsIdRoute,
+} as any)
 const AppAlumniIdEditRoute = AppAlumniIdEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -62,19 +92,29 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
+  '/mentorship': typeof AppMentorshipRoute
   '/alumni/$id': typeof AppAlumniIdRouteWithChildren
   '/alumni/new': typeof AppAlumniNewRoute
+  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/new': typeof AppCampaignsNewRoute
   '/alumni/': typeof AppAlumniIndexRoute
+  '/campaigns/': typeof AppCampaignsIndexRoute
   '/alumni/$id/edit': typeof AppAlumniIdEditRoute
+  '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
+  '/mentorship': typeof AppMentorshipRoute
   '/alumni/$id': typeof AppAlumniIdRouteWithChildren
   '/alumni/new': typeof AppAlumniNewRoute
+  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/new': typeof AppCampaignsNewRoute
   '/alumni': typeof AppAlumniIndexRoute
+  '/campaigns': typeof AppCampaignsIndexRoute
   '/alumni/$id/edit': typeof AppAlumniIdEditRoute
+  '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,10 +122,15 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/mentorship': typeof AppMentorshipRoute
   '/_app/alumni/$id': typeof AppAlumniIdRouteWithChildren
   '/_app/alumni/new': typeof AppAlumniNewRoute
+  '/_app/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/_app/campaigns/new': typeof AppCampaignsNewRoute
   '/_app/alumni/': typeof AppAlumniIndexRoute
+  '/_app/campaigns/': typeof AppCampaignsIndexRoute
   '/_app/alumni/$id/edit': typeof AppAlumniIdEditRoute
+  '/_app/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,29 +138,44 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/mentorship'
     | '/alumni/$id'
     | '/alumni/new'
+    | '/campaigns/$id'
+    | '/campaigns/new'
     | '/alumni/'
+    | '/campaigns/'
     | '/alumni/$id/edit'
+    | '/campaigns/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/dashboard'
+    | '/mentorship'
     | '/alumni/$id'
     | '/alumni/new'
+    | '/campaigns/$id'
+    | '/campaigns/new'
     | '/alumni'
+    | '/campaigns'
     | '/alumni/$id/edit'
+    | '/campaigns/$id/edit'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
     | '/_app/dashboard'
+    | '/_app/mentorship'
     | '/_app/alumni/$id'
     | '/_app/alumni/new'
+    | '/_app/campaigns/$id'
+    | '/_app/campaigns/new'
     | '/_app/alumni/'
+    | '/_app/campaigns/'
     | '/_app/alumni/$id/edit'
+    | '/_app/campaigns/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/mentorship': {
+      id: '/_app/mentorship'
+      path: '/mentorship'
+      fullPath: '/mentorship'
+      preLoaderRoute: typeof AppMentorshipRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -154,11 +221,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/campaigns/': {
+      id: '/_app/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns/'
+      preLoaderRoute: typeof AppCampaignsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/alumni/': {
       id: '/_app/alumni/'
       path: '/alumni'
       fullPath: '/alumni/'
       preLoaderRoute: typeof AppAlumniIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/new': {
+      id: '/_app/campaigns/new'
+      path: '/campaigns/new'
+      fullPath: '/campaigns/new'
+      preLoaderRoute: typeof AppCampaignsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/$id': {
+      id: '/_app/campaigns/$id'
+      path: '/campaigns/$id'
+      fullPath: '/campaigns/$id'
+      preLoaderRoute: typeof AppCampaignsIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/alumni/new': {
@@ -174,6 +262,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/alumni/$id'
       preLoaderRoute: typeof AppAlumniIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/$id/edit': {
+      id: '/_app/campaigns/$id/edit'
+      path: '/edit'
+      fullPath: '/campaigns/$id/edit'
+      preLoaderRoute: typeof AppCampaignsIdEditRouteImport
+      parentRoute: typeof AppCampaignsIdRoute
     }
     '/_app/alumni/$id/edit': {
       id: '/_app/alumni/$id/edit'
@@ -197,18 +292,38 @@ const AppAlumniIdRouteWithChildren = AppAlumniIdRoute._addFileChildren(
   AppAlumniIdRouteChildren,
 )
 
+interface AppCampaignsIdRouteChildren {
+  AppCampaignsIdEditRoute: typeof AppCampaignsIdEditRoute
+}
+
+const AppCampaignsIdRouteChildren: AppCampaignsIdRouteChildren = {
+  AppCampaignsIdEditRoute: AppCampaignsIdEditRoute,
+}
+
+const AppCampaignsIdRouteWithChildren = AppCampaignsIdRoute._addFileChildren(
+  AppCampaignsIdRouteChildren,
+)
+
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppMentorshipRoute: typeof AppMentorshipRoute
   AppAlumniIdRoute: typeof AppAlumniIdRouteWithChildren
   AppAlumniNewRoute: typeof AppAlumniNewRoute
+  AppCampaignsIdRoute: typeof AppCampaignsIdRouteWithChildren
+  AppCampaignsNewRoute: typeof AppCampaignsNewRoute
   AppAlumniIndexRoute: typeof AppAlumniIndexRoute
+  AppCampaignsIndexRoute: typeof AppCampaignsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppMentorshipRoute: AppMentorshipRoute,
   AppAlumniIdRoute: AppAlumniIdRouteWithChildren,
   AppAlumniNewRoute: AppAlumniNewRoute,
+  AppCampaignsIdRoute: AppCampaignsIdRouteWithChildren,
+  AppCampaignsNewRoute: AppCampaignsNewRoute,
   AppAlumniIndexRoute: AppAlumniIndexRoute,
+  AppCampaignsIndexRoute: AppCampaignsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
