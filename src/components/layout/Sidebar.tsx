@@ -1,9 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, Users, Handshake, Mail, ClipboardList, Settings, ScrollText, LogOut, Sun, Moon, GraduationCap, Search } from "lucide-react";
-import { useAuth, IDENTITY_LABEL, type IdentityKey } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { AccountRole } from "@/mocks";
 
@@ -18,10 +17,9 @@ const NAV: NavItem[] = [
   { to: "/settings/audit-log", label: "Audit log", icon: ScrollText, roles: ["admin"], section: "Admin" },
 ];
 
-const SWITCHER: IdentityKey[] = ["admin", "faculty_user", "student_user", "invited", "disabled"];
-
 export function Sidebar() {
-  const { user, identity, signOut, signInAs } = useAuth();
+  const { user, signOut } = useAuth();
+
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
@@ -112,19 +110,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-4 pb-4 pt-3 border-t border-sidebar-border space-y-3">
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1.5 px-1">View as</div>
-          <Select value={identity ?? "admin"} onValueChange={(v) => { signInAs(v as IdentityKey); navigate({ to: "/dashboard" }); }}>
-            <SelectTrigger className="h-8 text-xs rounded-md bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SWITCHER.map((k) => (
-                <SelectItem key={k} value={k}>{IDENTITY_LABEL[k]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="size-7 rounded-full bg-primary/10 text-primary grid place-items-center text-[10.5px] font-semibold shrink-0">
