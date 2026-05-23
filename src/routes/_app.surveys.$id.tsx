@@ -17,8 +17,8 @@ function SurveyDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && user.role === "faculty") navigate({ to: "/dashboard" }); }, [user, navigate]);
-  const canMutate = canEdit(user?.role);
+  useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  const canMutate = canEdit(user);
   const s = MOCK_SURVEYS.find((x) => x.id === id);
   const [importOpen, setImportOpen] = useState(false);
 

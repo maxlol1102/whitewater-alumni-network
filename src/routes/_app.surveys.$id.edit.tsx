@@ -11,7 +11,7 @@ function EditSurvey() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && !canEdit(user.role)) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => { if (user && !canEdit(user)) navigate({ to: "/dashboard" }); }, [user, navigate]);
   const s = MOCK_SURVEYS.find((x) => x.id === id);
   if (!s) return <PageContainer><p>Not found.</p></PageContainer>;
   return (

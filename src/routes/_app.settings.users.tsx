@@ -28,7 +28,7 @@ const ROLE_STYLES: Record<Role, string> = {
 function UsersPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && user.role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
   const [users, setUsers] = useState<Profile[]>(MOCK_USERS);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [actionUser, setActionUser] = useState<Profile | null>(null);

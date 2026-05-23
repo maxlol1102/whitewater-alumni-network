@@ -11,7 +11,7 @@ function EditAlumni() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && !canEdit(user.role)) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => { if (user && !canEdit(user)) navigate({ to: "/dashboard" }); }, [user, navigate]);
   const alumni = MOCK_ALUMNI.find((a) => a.id === id);
   if (!alumni) return <PageContainer><p>Not found.</p></PageContainer>;
   return (

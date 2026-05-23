@@ -24,8 +24,8 @@ function CampaignDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canMutate = canEdit(user?.role);
-  useEffect(() => { if (user && user.role === "faculty") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  const canMutate = canEdit(user);
+  useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
   const initial = MOCK_CAMPAIGNS.find((c) => c.id === id);
   const [campaign, setCampaign] = useState<Campaign | undefined>(initial);
 

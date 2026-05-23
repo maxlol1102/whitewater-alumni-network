@@ -14,7 +14,7 @@ function EditCampaign() {
   const navigate = useNavigate();
   const c = MOCK_CAMPAIGNS.find((x) => x.id === id);
   useEffect(() => {
-    if (user && !canEdit(user.role)) navigate({ to: "/dashboard" });
+    if (user && !canEdit(user)) navigate({ to: "/dashboard" });
     if (c && c.status !== "draft") { toast.error("Only draft campaigns can be edited"); navigate({ to: "/campaigns/$id", params: { id } }); }
   }, [user, navigate, c, id]);
   if (!c) return <PageContainer><p>Not found.</p></PageContainer>;
