@@ -4,16 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { GraduationCap } from "lucide-react";
-import { useAuth, IDENTITY_LABEL, isActive, type IdentityKey } from "@/lib/auth";
+import { useAuth, isActive } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
-const SWITCHER: IdentityKey[] = ["admin", "faculty_user", "student_user", "invited", "disabled"];
 
 function LoginPage() {
-  const { user, signInAs } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,11 +24,6 @@ function LoginPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("Invalid email or password");
-  }
-
-  function quick(id: IdentityKey) {
-    signInAs(id);
-    navigate({ to: "/dashboard" });
   }
 
   return (
@@ -56,20 +49,9 @@ function LoginPage() {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full">Sign in</Button>
-
-          <div className="relative my-4">
-            <Separator />
-            <span className="absolute inset-0 grid place-items-center -top-2 text-xs text-muted-foreground bg-card px-2 w-fit mx-auto">mock mode</span>
-          </div>
-          <div className="grid gap-2">
-            {SWITCHER.map((k) => (
-              <Button key={k} type="button" variant="outline" onClick={() => quick(k)}>
-                Continue as {IDENTITY_LABEL[k]}
-              </Button>
-            ))}
-          </div>
         </form>
       </Card>
     </div>
   );
 }
+
