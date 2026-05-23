@@ -147,7 +147,36 @@ function LoginPage() {
                   SSO
                 </button>
               </div>
+
+              {/* Demo accounts (mock auth) */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDemo((s) => !s)}
+                  className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <span>Use a demo account</span>
+                  <ChevronDown className={`size-3.5 transition-transform ${showDemo ? "rotate-180" : ""}`} />
+                </button>
+                {showDemo && (
+                  <ul className="mt-2 rounded-md border border-border divide-y divide-border bg-card">
+                    {DEMO_ACCOUNTS.map((a) => (
+                      <li key={a.email}>
+                        <button
+                          type="button"
+                          onClick={() => { setEmail(a.email); setPassword("demo"); signInWithEmail(a.email); }}
+                          className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-surface-100 transition-colors"
+                        >
+                          <span className="text-sm">{a.label}</span>
+                          <span className="text-xs text-muted-foreground font-mono">{a.email}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </form>
+
           </div>
         </div>
 
