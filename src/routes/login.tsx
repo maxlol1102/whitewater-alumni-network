@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, KeyRound, ShieldCheck, ChevronDown } from "lucide-react";
-import { useAuth, isActive, identityOf, type IdentityKey } from "@/lib/auth";
-import { MOCK_USERS } from "@/mocks";
+import { GraduationCap, KeyRound, ShieldCheck } from "lucide-react";
+import { useAuth, isActive } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -20,45 +20,35 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-const DEMO_ACCOUNTS: { email: string; label: string }[] = [
-  { email: "SubediD30@uww.edu", label: "Admin" },
-  { email: "morgan.choi@uww.edu", label: "Faculty user" },
-  { email: "riley.nguyen@uww.edu", label: "Student user" },
-  { email: "sky.anderson@uww.edu", label: "Invited (no access)" },
-];
-
 function LoginPage() {
-  const { user, signInAs } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDemo, setShowDemo] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
 
-  function signInWithEmail(targetEmail: string) {
-    const match = MOCK_USERS.find(
-      (m) => m.email.toLowerCase() === targetEmail.trim().toLowerCase(),
-    );
-    if (!match) {
-      setError("No account found with that email.");
-      return;
-    }
-    const id: IdentityKey = identityOf(match);
-    signInAs(id);
-    if (match.status === "active") navigate({ to: "/dashboard" });
-    else setError(`This account is ${match.status} and cannot access the app.`);
-  }
-
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    signInWithEmail(email);
+    setSubmitting(true);
+    const { error: err } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setSubmitting(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    void remember;
   }
+
 
 
   return (
