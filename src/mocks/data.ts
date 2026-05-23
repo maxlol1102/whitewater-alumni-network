@@ -211,7 +211,7 @@ const AUDIT_ACTIONS: Array<{ action: AuditAction; entity_type: string; severity:
   { action: "campaign.deleted", entity_type: "campaign", severity: "warning", summary: "Deleted draft campaign" },
   { action: "survey.created", entity_type: "survey", severity: "info", summary: "Created new survey" },
   { action: "survey.responses_imported", entity_type: "survey", severity: "info", summary: "Imported 41 survey responses" },
-  { action: "permission.denied", entity_type: "route", severity: "critical", summary: "Staff attempted access to /settings/users" },
+  { action: "permission.denied", entity_type: "route", severity: "critical", summary: "Non-admin user attempted access to /settings/users" },
 ];
 
 export const MOCK_AUDIT_LOGS: AuditLog[] = Array.from({ length: 38 }, (_, i) => {
