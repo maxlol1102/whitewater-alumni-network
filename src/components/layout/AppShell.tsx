@@ -21,9 +21,9 @@ export function AppShell() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-surface-100">
+    <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="ml-60 min-h-screen p-8 overflow-auto">
+      <main className="ml-64 min-h-screen px-10 py-10 overflow-auto">
         <Outlet />
       </main>
     </div>
