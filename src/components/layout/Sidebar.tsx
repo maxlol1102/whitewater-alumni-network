@@ -110,19 +110,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-4 pb-4 pt-3 border-t border-sidebar-border space-y-3">
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1.5 px-1">View as</div>
-          <Select value={identity ?? "admin"} onValueChange={(v) => { signInAs(v as IdentityKey); navigate({ to: "/dashboard" }); }}>
-            <SelectTrigger className="h-8 text-xs rounded-md bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SWITCHER.map((k) => (
-                <SelectItem key={k} value={k}>{IDENTITY_LABEL[k]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="size-7 rounded-full bg-primary/10 text-primary grid place-items-center text-[10.5px] font-semibold shrink-0">
