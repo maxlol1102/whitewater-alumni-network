@@ -18,10 +18,10 @@ export function Breadcrumbs({ items }: { items: { label: string; to?: string }[]
 
 export function PageHeader({ title, description, actions, className }: { title: string; description?: string; actions?: ReactNode; className?: string }) {
   return (
-    <div className={cn("flex flex-wrap items-start justify-between gap-4 mb-6", className)}>
+    <div className={cn("flex flex-wrap items-end justify-between gap-4 mb-8 pb-6 border-b border-border", className)}>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+        <h1 className="text-[28px] font-semibold tracking-tight leading-tight">{title}</h1>
+        {description && <p className="text-[15px] text-muted-foreground mt-1.5">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -29,7 +29,7 @@ export function PageHeader({ title, description, actions, className }: { title: 
 }
 
 export function PageContainer({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("max-w-[1600px] mx-auto", className)}>{children}</div>;
+  return <div className={cn("max-w-[1400px] mx-auto", className)}>{children}</div>;
 }
 
 export function EmptyState({ icon: Icon, title, description, action }: { icon: React.ComponentType<{ className?: string }>; title: string; description?: string; action?: ReactNode }) {
