@@ -1,33 +1,34 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, Users, Handshake, Mail, ClipboardList, Settings, ScrollText, LogOut, Sun, Moon, GraduationCap, Search } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { useAuth, IDENTITY_LABEL, type IdentityKey } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import type { Role } from "@/mocks";
+import type { AccountRole } from "@/mocks";
 
-type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: Role[]; section: string };
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: AccountRole[]; section: string };
 const NAV: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "faculty"], section: "Overview" },
-  { to: "/alumni", label: "Alumni", icon: Users, roles: ["super_admin", "admin", "faculty"], section: "Engage" },
-  { to: "/mentorship", label: "Mentorship", icon: Handshake, roles: ["super_admin", "admin", "faculty"], section: "Engage" },
-  { to: "/campaigns", label: "Campaigns", icon: Mail, roles: ["super_admin", "admin"], section: "Engage" },
-  { to: "/surveys", label: "Surveys", icon: ClipboardList, roles: ["super_admin", "admin"], section: "Engage" },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "staff"], section: "Overview" },
+  { to: "/alumni", label: "Alumni", icon: Users, roles: ["super_admin", "staff"], section: "Engage" },
+  { to: "/mentorship", label: "Mentorship", icon: Handshake, roles: ["super_admin", "staff"], section: "Engage" },
+  { to: "/campaigns", label: "Campaigns", icon: Mail, roles: ["super_admin"], section: "Engage" },
+  { to: "/surveys", label: "Surveys", icon: ClipboardList, roles: ["super_admin"], section: "Engage" },
   { to: "/settings/users", label: "Users", icon: Settings, roles: ["super_admin"], section: "Admin" },
   { to: "/settings/audit-log", label: "Audit log", icon: ScrollText, roles: ["super_admin"], section: "Admin" },
 ];
 
+const SWITCHER: IdentityKey[] = ["super_admin", "staff_faculty", "staff_student", "invited", "disabled"];
+
 export function Sidebar() {
-  const { user, signOut, switchRole } = useAuth();
+  const { user, identity, signOut, signInAs } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
   if (!user) return null;
-  const items = NAV.filter((n) => n.roles.includes(user.role));
+  const items = NAV.filter((n) => n.roles.includes(user.account_role));
   const sections = Array.from(new Set(items.map((i) => i.section)));
 
-  // global mono numbering across sections
   let counter = 0;
   const numbered = items.map((i) => ({ ...i, num: String(++counter).padStart(2, "0") }));
 
@@ -113,14 +114,14 @@ export function Sidebar() {
       <div className="px-4 pb-4 pt-3 border-t border-sidebar-border space-y-3">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1.5 px-1">View as</div>
-          <Select value={user.role} onValueChange={(v) => switchRole(v as Role)}>
+          <Select value={identity ?? "super_admin"} onValueChange={(v) => { signInAs(v as IdentityKey); navigate({ to: "/dashboard" }); }}>
             <SelectTrigger className="h-8 text-xs rounded-md bg-background">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="super_admin">Super Admin</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="faculty">Faculty</SelectItem>
+              {SWITCHER.map((k) => (
+                <SelectItem key={k} value={k}>{IDENTITY_LABEL[k]}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -131,7 +132,10 @@ export function Sidebar() {
             </div>
             <div className="text-[11.5px] min-w-0 leading-tight">
               <div className="font-medium truncate">{user.full_name}</div>
-              <div className="text-muted-foreground truncate font-mono text-[10px]">{user.email}</div>
+              <div className="text-muted-foreground truncate font-mono text-[10px]">
+                {user.account_role}
+                {user.department_role ? ` · ${user.department_role}` : ""}
+              </div>
             </div>
           </div>
           <Button size="icon" variant="ghost" className="size-7 shrink-0" onClick={() => { signOut(); navigate({ to: "/login" }); }} aria-label="Sign out">

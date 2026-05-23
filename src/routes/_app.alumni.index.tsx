@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_app/alumni/")({ component: AlumniList })
 function AlumniList() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const canMutate = canEdit(user?.role);
+  const canMutate = canEdit(user);
   const [q, setQ] = useState("");
   const [years, setYears] = useState<number[]>([]);
   const [industries, setIndustries] = useState<string[]>([]);

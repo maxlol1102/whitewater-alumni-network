@@ -6,28 +6,30 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { GraduationCap } from "lucide-react";
-import { useAuth } from "@/lib/auth";
-import type { Role } from "@/mocks";
+import { useAuth, IDENTITY_LABEL, isActive, type IdentityKey } from "@/lib/auth";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
+const SWITCHER: IdentityKey[] = ["super_admin", "staff_faculty", "staff_student", "invited", "disabled"];
+
 function LoginPage() {
-  const { user, signIn } = useAuth();
+  const { user, signInAs } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && !user.disabled_at) navigate({ to: "/dashboard" });
+    if (isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("Invalid email or password");
   }
-  function quick(role: Role) {
-    signIn(role);
+
+  function quick(id: IdentityKey) {
+    signInAs(id);
     navigate({ to: "/dashboard" });
   }
 
@@ -40,7 +42,7 @@ function LoginPage() {
           </div>
           <div>
             <h1 className="font-semibold">UWW CS Alumni</h1>
-            <p className="text-xs opacity-80">Internal staff sign-in</p>
+            <p className="text-xs opacity-80">Invitation-only · No public registration</p>
           </div>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
@@ -60,9 +62,11 @@ function LoginPage() {
             <span className="absolute inset-0 grid place-items-center -top-2 text-xs text-muted-foreground bg-card px-2 w-fit mx-auto">mock mode</span>
           </div>
           <div className="grid gap-2">
-            <Button type="button" variant="outline" onClick={() => quick("super_admin")}>Continue as Super Admin</Button>
-            <Button type="button" variant="outline" onClick={() => quick("admin")}>Continue as Admin</Button>
-            <Button type="button" variant="outline" onClick={() => quick("faculty")}>Continue as Faculty</Button>
+            {SWITCHER.map((k) => (
+              <Button key={k} type="button" variant="outline" onClick={() => quick(k)}>
+                Continue as {IDENTITY_LABEL[k]}
+              </Button>
+            ))}
           </div>
         </form>
       </Card>

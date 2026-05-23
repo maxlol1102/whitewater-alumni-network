@@ -13,8 +13,8 @@ export const Route = createFileRoute("/_app/surveys/")({ component: SurveysList 
 function SurveysList() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && user.role === "faculty") navigate({ to: "/dashboard" }); }, [user, navigate]);
-  const canMutate = canEdit(user?.role);
+  useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  const canMutate = canEdit(user);
 
   return (
     <PageContainer>

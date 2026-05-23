@@ -17,7 +17,7 @@ function AlumniProfile() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canMutate = canEdit(user?.role);
+  const canMutate = canEdit(user);
   const [archived, setArchived] = useState(false);
   const alumni = MOCK_ALUMNI.find((a) => a.id === id);
   const responses = MOCK_SURVEY_RESPONSES.filter((r) => r.alumni_id === id);

@@ -1,15 +1,25 @@
 export const MOCK_MODE = true;
 
-export type Role = "super_admin" | "admin" | "faculty";
+export type AccountRole = "super_admin" | "staff";
+export type DepartmentRole = "faculty" | "student";
+export type UserStatus = "invited" | "active" | "disabled" | "deleted";
+
+// Backwards-compat alias (deprecated; equals AccountRole)
+export type Role = AccountRole;
 
 export type Profile = {
   id: string;
   full_name: string;
   email: string;
-  role: Role;
+  account_role: AccountRole;
+  department_role: DepartmentRole | null;
+  status: UserStatus;
+  invited_at: string | null;
+  accepted_at: string | null;
   disabled_at: string | null;
-  created_at: string;
+  deleted_at: string | null;
   last_sign_in_at: string | null;
+  created_at: string;
 };
 
 export type Alumni = {
@@ -66,15 +76,40 @@ export type SurveyResponse = {
   submitted_at: string;
 };
 
+export type AuditAction =
+  | "user.invited"
+  | "user.invite_resent"
+  | "user.invite_cancelled"
+  | "user.accepted_invite"
+  | "user.updated"
+  | "user.account_role_changed"
+  | "user.department_role_changed"
+  | "user.disabled"
+  | "user.reactivated"
+  | "user.deleted"
+  | "permission.denied"
+  | "alumni.created"
+  | "alumni.updated"
+  | "alumni.archived"
+  | "alumni.imported"
+  | "alumni.exported"
+  | "campaign.created"
+  | "campaign.sent"
+  | "campaign.deleted"
+  | "survey.created"
+  | "survey.responses_imported";
+
 export type AuditLog = {
   id: string;
   actor_id: string;
   actor_email: string;
-  actor_role: Role;
-  action: string;
+  actor_role: AccountRole;
+  action: AuditAction | string;
   entity_type: string;
   entity_id: string | null;
   entity_label: string;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
   summary: string;
   severity: "info" | "warning" | "critical";
   ip_address?: string;
@@ -83,11 +118,13 @@ export type AuditLog = {
 };
 
 export const MOCK_USERS: Profile[] = [
-  { id: "u-super", full_name: "Pat Reynolds", email: "pat.reynolds@uww.edu", role: "super_admin", disabled_at: null, created_at: "2024-01-12T10:00:00Z", last_sign_in_at: "2026-05-22T14:21:00Z" },
-  { id: "u-admin", full_name: "Jamie Lee", email: "jamie.lee@uww.edu", role: "admin", disabled_at: null, created_at: "2024-03-22T10:00:00Z", last_sign_in_at: "2026-05-21T08:11:00Z" },
-  { id: "u-faculty", full_name: "Dr. Morgan Choi", email: "morgan.choi@uww.edu", role: "faculty", disabled_at: null, created_at: "2024-05-01T10:00:00Z", last_sign_in_at: "2026-05-20T19:02:00Z" },
-  { id: "u-admin2", full_name: "Riley Nguyen", email: "riley.nguyen@uww.edu", role: "admin", disabled_at: null, created_at: "2024-08-15T10:00:00Z", last_sign_in_at: "2026-05-19T11:45:00Z" },
-  { id: "u-faculty2", full_name: "Dr. Alex Park", email: "alex.park@uww.edu", role: "faculty", disabled_at: "2026-04-10T10:00:00Z", created_at: "2024-09-01T10:00:00Z", last_sign_in_at: "2026-04-09T13:00:00Z" },
+  { id: "u-super", full_name: "Pat Reynolds", email: "pat.reynolds@uww.edu", account_role: "super_admin", department_role: null, status: "active", invited_at: "2024-01-10T10:00:00Z", accepted_at: "2024-01-12T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-22T14:21:00Z", created_at: "2024-01-12T10:00:00Z" },
+  { id: "u-fac-1", full_name: "Dr. Morgan Choi", email: "morgan.choi@uww.edu", account_role: "staff", department_role: "faculty", status: "active", invited_at: "2024-04-28T10:00:00Z", accepted_at: "2024-05-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-20T19:02:00Z", created_at: "2024-05-01T10:00:00Z" },
+  { id: "u-fac-2", full_name: "Dr. Alex Park", email: "alex.park@uww.edu", account_role: "staff", department_role: "faculty", status: "active", invited_at: "2024-08-29T10:00:00Z", accepted_at: "2024-09-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-18T12:00:00Z", created_at: "2024-09-01T10:00:00Z" },
+  { id: "u-stu-1", full_name: "Riley Nguyen", email: "riley.nguyen@uww.edu", account_role: "staff", department_role: "student", status: "active", invited_at: "2025-08-10T10:00:00Z", accepted_at: "2025-08-15T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-19T11:45:00Z", created_at: "2025-08-15T10:00:00Z" },
+  { id: "u-stu-2", full_name: "Jamie Lee", email: "jamie.lee@uww.edu", account_role: "staff", department_role: "student", status: "active", invited_at: "2025-09-20T10:00:00Z", accepted_at: "2025-09-22T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-21T08:11:00Z", created_at: "2025-09-22T10:00:00Z" },
+  { id: "u-inv-1", full_name: "Sky Anderson", email: "sky.anderson@uww.edu", account_role: "staff", department_role: "faculty", status: "invited", invited_at: "2026-05-20T15:00:00Z", accepted_at: null, disabled_at: null, deleted_at: null, last_sign_in_at: null, created_at: "2026-05-20T15:00:00Z" },
+  { id: "u-dis-1", full_name: "Drew Carter", email: "drew.carter@uww.edu", account_role: "staff", department_role: "student", status: "disabled", invited_at: "2025-02-01T10:00:00Z", accepted_at: "2025-02-03T10:00:00Z", disabled_at: "2026-04-10T10:00:00Z", deleted_at: null, last_sign_in_at: "2026-04-09T13:00:00Z", created_at: "2025-02-03T10:00:00Z" },
 ];
 
 const COMPANIES = ["Epic Systems", "Microsoft", "Google", "Northwestern Mutual", "GE Healthcare", "Rockwell Automation", "Kohl's", "American Family Insurance", "Generac", "Fiserv", "Direct Supply", "Trek Bicycle"];
@@ -136,11 +173,11 @@ export const MOCK_ALUMNI: Alumni[] = Array.from({ length: 64 }, (_, i) => {
 });
 
 export const MOCK_CAMPAIGNS: Campaign[] = [
-  { id: "c-1", name: "Spring Newsletter 2026", subject: "What's new in UWW CS this spring", body: "<p>Hello {{first_name}},</p><p>Here's what's happening...</p>", status: "sent", filter_mentorship_only: false, filter_tags: ["newsletter"], filter_grad_years: [], recipient_count: 542, sent_at: "2026-04-12T15:00:00Z", created_at: "2026-04-01T09:00:00Z", created_by: "u-admin" },
+  { id: "c-1", name: "Spring Newsletter 2026", subject: "What's new in UWW CS this spring", body: "<p>Hello {{first_name}},</p><p>Here's what's happening...</p>", status: "sent", filter_mentorship_only: false, filter_tags: ["newsletter"], filter_grad_years: [], recipient_count: 542, sent_at: "2026-04-12T15:00:00Z", created_at: "2026-04-01T09:00:00Z", created_by: "u-super" },
   { id: "c-2", name: "Mentor Recruitment Drive", subject: "Become a CS mentor", body: "<p>We need your help...</p>", status: "sent", filter_mentorship_only: true, filter_tags: [], filter_grad_years: [], recipient_count: 188, sent_at: "2026-03-02T15:00:00Z", created_at: "2026-02-20T09:00:00Z", created_by: "u-super" },
-  { id: "c-3", name: "Career Fair Invite", subject: "Join us at the Fall Career Fair", body: "<p>Save the date...</p>", status: "draft", filter_mentorship_only: false, filter_tags: ["hiring"], filter_grad_years: [], recipient_count: 96, sent_at: null, created_at: "2026-05-15T09:00:00Z", created_by: "u-admin" },
+  { id: "c-3", name: "Career Fair Invite", subject: "Join us at the Fall Career Fair", body: "<p>Save the date...</p>", status: "draft", filter_mentorship_only: false, filter_tags: ["hiring"], filter_grad_years: [], recipient_count: 96, sent_at: null, created_at: "2026-05-15T09:00:00Z", created_by: "u-super" },
   { id: "c-4", name: "Annual Giving Appeal", subject: "Support the next generation", body: "<p>Your gift matters...</p>", status: "scheduled", filter_mentorship_only: false, filter_tags: ["donor"], filter_grad_years: [], recipient_count: 64, sent_at: null, created_at: "2026-05-18T09:00:00Z", created_by: "u-super" },
-  { id: "c-5", name: "Cyber Speaker Series", subject: "RSVP: Cybersecurity speaker night", body: "<p>Join us...</p>", status: "failed", filter_mentorship_only: false, filter_tags: ["speaker"], filter_grad_years: [], recipient_count: 32, sent_at: "2026-05-10T15:00:00Z", created_at: "2026-05-05T09:00:00Z", created_by: "u-admin2" },
+  { id: "c-5", name: "Cyber Speaker Series", subject: "RSVP: Cybersecurity speaker night", body: "<p>Join us...</p>", status: "failed", filter_mentorship_only: false, filter_tags: ["speaker"], filter_grad_years: [], recipient_count: 32, sent_at: "2026-05-10T15:00:00Z", created_at: "2026-05-05T09:00:00Z", created_by: "u-super" },
 ];
 
 export const MOCK_SURVEYS: Survey[] = [
@@ -157,9 +194,11 @@ export const MOCK_SURVEY_RESPONSES: SurveyResponse[] = Array.from({ length: 40 }
   submitted_at: new Date(2026, 3 + (i % 2), 1 + (i % 27)).toISOString(),
 }));
 
-const AUDIT_ACTIONS: Array<{ action: string; entity_type: string; severity: AuditLog["severity"]; summary: string }> = [
-  { action: "user.invited", entity_type: "user", severity: "info", summary: "Invited new user as admin" },
-  { action: "user.role_changed", entity_type: "user", severity: "warning", summary: "Changed role from faculty to admin" },
+const AUDIT_ACTIONS: Array<{ action: AuditAction; entity_type: string; severity: AuditLog["severity"]; summary: string }> = [
+  { action: "user.invited", entity_type: "user", severity: "info", summary: "Invited new staff (faculty)" },
+  { action: "user.accepted_invite", entity_type: "user", severity: "info", summary: "User accepted invitation" },
+  { action: "user.account_role_changed", entity_type: "user", severity: "warning", summary: "Changed account role from staff to super_admin" },
+  { action: "user.department_role_changed", entity_type: "user", severity: "warning", summary: "Changed department role from student to faculty" },
   { action: "user.disabled", entity_type: "user", severity: "warning", summary: "Disabled user account" },
   { action: "user.reactivated", entity_type: "user", severity: "info", summary: "Reactivated user account" },
   { action: "alumni.created", entity_type: "alumni", severity: "info", summary: "Created new alumni record" },
@@ -172,7 +211,7 @@ const AUDIT_ACTIONS: Array<{ action: string; entity_type: string; severity: Audi
   { action: "campaign.deleted", entity_type: "campaign", severity: "warning", summary: "Deleted draft campaign" },
   { action: "survey.created", entity_type: "survey", severity: "info", summary: "Created new survey" },
   { action: "survey.responses_imported", entity_type: "survey", severity: "info", summary: "Imported 41 survey responses" },
-  { action: "permission.denied", entity_type: "route", severity: "critical", summary: "Faculty attempted access to /settings/users" },
+  { action: "permission.denied", entity_type: "route", severity: "critical", summary: "Staff attempted access to /settings/users" },
 ];
 
 export const MOCK_AUDIT_LOGS: AuditLog[] = Array.from({ length: 38 }, (_, i) => {
@@ -182,7 +221,7 @@ export const MOCK_AUDIT_LOGS: AuditLog[] = Array.from({ length: 38 }, (_, i) => 
     id: `al-${i + 1}`,
     actor_id: actor.id,
     actor_email: actor.email,
-    actor_role: actor.role,
+    actor_role: actor.account_role,
     action: a.action,
     entity_type: a.entity_type,
     entity_id: `e-${i + 1}`,
