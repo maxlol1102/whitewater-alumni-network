@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,13 +13,22 @@ import { Dialog } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Search } from "lucide-react";
+import { UserPlus, MoreHorizontal, Search, Loader2 } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
-import { MOCK_USERS, type Profile, type AccountRole, type UserCategory, type UserStatus } from "@/mocks";
+import type { Profile, AccountRole, UserCategory, UserStatus } from "@/mocks";
 import { useAuth } from "@/lib/auth";
-import { guardDelete, guardDisable, guardEdit } from "@/lib/user-guards";
 import { InviteUserDialog, type InvitePayload } from "@/components/users/InviteUserDialog";
 import { EditUserDialog, type EditPayload } from "@/components/users/EditUserDialog";
+import {
+  listUsers,
+  inviteUser,
+  updateUser,
+  disableUser,
+  reactivateUser,
+  deleteUser,
+  resendInvite,
+  cancelInvite,
+} from "@/lib/users.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/settings/users")({ component: UsersPage });
@@ -40,17 +51,76 @@ function UsersPage() {
   const navigate = useNavigate();
   useEffect(() => { if (user && user.account_role !== "admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
 
-  const [users, setUsers] = useState<Profile[]>(MOCK_USERS);
+  const qc = useQueryClient();
+  const list = useServerFn(listUsers);
+  const invite = useServerFn(inviteUser);
+  const update = useServerFn(updateUser);
+  const disable = useServerFn(disableUser);
+  const reactivate = useServerFn(reactivateUser);
+  const remove = useServerFn(deleteUser);
+  const resend = useServerFn(resendInvite);
+  const cancel = useServerFn(cancelInvite);
+
+  const usersQ = useQuery({
+    queryKey: ["users"],
+    queryFn: () => list(),
+    enabled: !!user && user.account_role === "admin",
+  });
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["users"] });
+
+  const inviteM = useMutation({
+    mutationFn: (p: InvitePayload) => invite({ data: p }),
+    onSuccess: (_d, p) => {
+      toast.success(p.status === "invited" ? `Invitation sent to ${p.email}.` : `User ${p.email} created.`);
+      setInviteOpen(false);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const editM = useMutation({
+    mutationFn: (args: { id: string; payload: EditPayload }) =>
+      update({ data: { id: args.id, ...args.payload } }),
+    onSuccess: () => { toast.success("User updated."); setEditUser(null); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const actionM = useMutation({
+    mutationFn: async (args: { type: Exclude<ActionType, null>; id: string }) => {
+      switch (args.type) {
+        case "disable": return disable({ data: { id: args.id } });
+        case "reactivate": return reactivate({ data: { id: args.id } });
+        case "delete": return remove({ data: { id: args.id } });
+        case "resend": return resend({ data: { id: args.id } });
+        case "cancel_invite": return cancel({ data: { id: args.id } });
+      }
+    },
+    onSuccess: (_d, args) => {
+      const msg: Record<Exclude<ActionType, null>, string> = {
+        disable: "User disabled.",
+        reactivate: "User reactivated.",
+        delete: "User deleted.",
+        resend: "Invitation resent.",
+        cancel_invite: "Invitation cancelled.",
+      };
+      toast.success(msg[args.type]);
+      setActionUser(null); setActionType(null);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<Profile | null>(null);
   const [actionUser, setActionUser] = useState<Profile | null>(null);
   const [actionType, setActionType] = useState<ActionType>(null);
   const [showDeleted, setShowDeleted] = useState(false);
-
-  // Filters
   const [q, setQ] = useState("");
   const [fStatus, setFStatus] = useState<string>("all");
   const [fCategory, setFCategory] = useState<string>("all");
+
+  const users = (usersQ.data?.users ?? []) as Profile[];
 
   const rows = useMemo(() => users.filter((u) => {
     if (!showDeleted && u.status === "deleted") return false;
@@ -64,95 +134,8 @@ function UsersPage() {
 
   if (!user) return null;
 
-  function audit(action: string, summary: string) {
-    // Phase A: mock audit recording. Phase B writes to audit_logs via edge fn.
-    // eslint-disable-next-line no-console
-    console.info(`[audit] ${action} — ${summary}`);
-  }
-
-  function handleInvite(p: InvitePayload) {
-    if (users.some((u) => u.email.toLowerCase() === p.email)) {
-      toast.error("A user with that email already exists.");
-      return;
-    }
-    const now = new Date().toISOString();
-    const newUser: Profile = {
-      id: `u-${Math.random().toString(36).slice(2, 8)}`,
-      full_name: p.full_name,
-      email: p.email,
-      account_role: "user",
-      user_category: p.user_category,
-      status: p.status,
-      invited_at: now,
-      accepted_at: p.status === "active" ? now : null,
-      disabled_at: p.status === "disabled" ? now : null,
-      deleted_at: null,
-      last_sign_in_at: null,
-      created_at: now,
-    };
-    setUsers((prev) => [newUser, ...prev]);
-    audit("user.invited", `Created ${p.email} as ${p.user_category} (${p.status})`);
-    if (p.status === "invited") toast.success(`Invitation sent to ${p.email}.`);
-    else toast.success(`User ${p.email} created.`);
-    setInviteOpen(false);
-  }
-
-  function handleEdit(target: Profile, p: EditPayload) {
-    const check = guardEdit(user!, target, p.user_category);
-    if (!check.ok) {
-      audit("permission.denied", check.reason);
-      toast.error(check.reason);
-      return;
-    }
-    const before = { full_name: target.full_name, user_category: target.user_category, status: target.status };
-    setUsers((prev) => prev.map((x) => x.id === target.id ? {
-      ...x,
-      full_name: p.full_name,
-      user_category: p.user_category,
-      status: p.status,
-      disabled_at: p.status === "disabled" ? (x.disabled_at ?? new Date().toISOString()) : null,
-      accepted_at: p.status === "active" && !x.accepted_at ? new Date().toISOString() : x.accepted_at,
-    } : x));
-    if (before.user_category !== p.user_category) audit("user.category_changed", `${target.email}: ${before.user_category ?? "—"} → ${p.user_category ?? "—"}`);
-    if (before.status !== p.status) audit("user.status_changed", `${target.email}: ${before.status} → ${p.status}`);
-    if (before.full_name !== p.full_name) audit("user.updated", `${target.email}: profile updated`);
-    toast.success("User updated.");
-    setEditUser(null);
-  }
-
-  function runAction() {
-    if (!actionUser || !actionType) return;
-    const t = actionUser;
-    if (actionType === "delete") {
-      const r = guardDelete(user!, t);
-      if (!r.ok) { audit("permission.denied", r.reason); toast.error(r.reason); return; }
-      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, status: "deleted", deleted_at: new Date().toISOString() } : x));
-      audit("user.deleted", `Deleted ${t.email}`);
-      toast.success("User deleted.");
-    } else if (actionType === "disable") {
-      const r = guardDisable(user!, t);
-      if (!r.ok) { audit("permission.denied", r.reason); toast.error(r.reason); return; }
-      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, status: "disabled", disabled_at: new Date().toISOString() } : x));
-      audit("user.disabled", `Disabled ${t.email}`);
-      toast.success("User disabled.");
-    } else if (actionType === "reactivate") {
-      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, status: "active", disabled_at: null } : x));
-      audit("user.reactivated", `Reactivated ${t.email}`);
-      toast.success("User reactivated.");
-    } else if (actionType === "resend") {
-      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, invited_at: new Date().toISOString() } : x));
-      audit("user.invite_resent", `Resent invite to ${t.email}`);
-      toast.success(`Invitation resent to ${t.email}.`);
-    } else if (actionType === "cancel_invite") {
-      setUsers((prev) => prev.filter((x) => x.id !== t.id));
-      audit("user.invite_cancelled", `Cancelled invite for ${t.email}`);
-      toast.success("Invitation cancelled.");
-    }
-    setActionUser(null); setActionType(null);
-  }
-
   const actionCopy: Record<Exclude<ActionType, null>, { title: string; desc: string }> = {
-    delete: { title: "Delete user?", desc: "This removes the user account. An audit log entry will be recorded." },
+    delete: { title: "Delete user?", desc: "This permanently removes the user account and revokes access." },
     disable: { title: "Disable user?", desc: "The user will lose access to the app until reactivated." },
     reactivate: { title: "Reactivate user?", desc: "The user will regain access to the app immediately." },
     resend: { title: "Resend invitation?", desc: "A new invitation email will be sent." },
@@ -224,7 +207,7 @@ function UsersPage() {
               return (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">
-                    {u.full_name} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
+                    {u.full_name || <span className="text-muted-foreground">—</span>} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground font-mono text-xs">{u.email}</TableCell>
                   <TableCell><Badge variant={isAdmin ? "default" : "outline"}>{ACCOUNT_LABEL[u.account_role]}</Badge></TableCell>
@@ -271,15 +254,36 @@ function UsersPage() {
             })}
           </TableBody>
         </Table>
-        {rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No users match your filters.</div>}
+        {usersQ.isLoading && (
+          <div className="p-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Loading users…
+          </div>
+        )}
+        {usersQ.isError && (
+          <div className="p-8 text-center text-sm text-destructive">
+            Failed to load users: {(usersQ.error as Error).message}
+          </div>
+        )}
+        {!usersQ.isLoading && rows.length === 0 && (
+          <div className="p-8 text-center text-sm text-muted-foreground">No users match your filters.</div>
+        )}
       </Card>
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <InviteUserDialog onSubmit={handleInvite} onCancel={() => setInviteOpen(false)} />
+        <InviteUserDialog
+          onSubmit={(p) => inviteM.mutate(p)}
+          onCancel={() => setInviteOpen(false)}
+        />
       </Dialog>
 
       <Dialog open={!!editUser} onOpenChange={(o) => !o && setEditUser(null)}>
-        {editUser && <EditUserDialog user={editUser} onSubmit={(p) => handleEdit(editUser, p)} onCancel={() => setEditUser(null)} />}
+        {editUser && (
+          <EditUserDialog
+            user={editUser}
+            onSubmit={(p) => editM.mutate({ id: editUser.id, payload: p })}
+            onCancel={() => setEditUser(null)}
+          />
+        )}
       </Dialog>
 
       <AlertDialog open={!!actionType} onOpenChange={(o) => { if (!o) { setActionUser(null); setActionType(null); } }}>
@@ -294,8 +298,13 @@ function UsersPage() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={runAction}>Confirm</AlertDialogAction>
+                <AlertDialogCancel disabled={actionM.isPending}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={actionM.isPending}
+                  onClick={() => actionUser && actionType && actionM.mutate({ type: actionType, id: actionUser.id })}
+                >
+                  {actionM.isPending ? "Working…" : "Confirm"}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </>
           )}
