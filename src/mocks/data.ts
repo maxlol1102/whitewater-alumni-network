@@ -82,7 +82,7 @@ export type AuditAction =
   | "user.invite_cancelled"
   | "user.accepted_invite"
   | "user.updated"
-  | "user.account_role_changed"
+  | "user.status_changed"
   | "user.category_changed"
   | "user.disabled"
   | "user.reactivated"
