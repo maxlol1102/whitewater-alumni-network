@@ -16,12 +16,15 @@ export function Breadcrumbs({ items }: { items: { label: string; to?: string }[]
   );
 }
 
-export function PageHeader({ title, description, actions, className }: { title: string; description?: string; actions?: ReactNode; className?: string }) {
+export function PageHeader({ title, description, actions, eyebrow, className }: { title: string; description?: string; actions?: ReactNode; eyebrow?: string; className?: string }) {
   return (
-    <div className={cn("flex flex-wrap items-end justify-between gap-4 mb-8 pb-6 border-b border-border", className)}>
+    <div className={cn("flex flex-wrap items-end justify-between gap-4 mb-10 pb-6 border-b border-border", className)}>
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight leading-tight">{title}</h1>
-        {description && <p className="text-[15px] text-muted-foreground mt-1.5">{description}</p>}
+        {eyebrow && (
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-muted-foreground mb-2.5">{eyebrow}</div>
+        )}
+        <h1 className="text-[30px] font-semibold tracking-[-0.02em] leading-[1.1]">{title}</h1>
+        {description && <p className="text-[14.5px] leading-[1.65] text-muted-foreground mt-2 max-w-2xl">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
