@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Sidebar } from "./Sidebar";
-import { useAuth, canAccess } from "@/lib/auth";
+import { useAuth, canAccess, isActive } from "@/lib/auth";
 
 export function AppShell() {
   const { user } = useAuth();
@@ -9,11 +9,11 @@ export function AppShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !isActive(user)) {
       navigate({ to: "/login" });
       return;
     }
-    if (!canAccess(user.role, path)) {
+    if (!canAccess(user, path)) {
       navigate({ to: "/dashboard" });
     }
   }, [user, path, navigate]);
