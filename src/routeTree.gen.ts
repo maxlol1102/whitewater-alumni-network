@@ -14,6 +14,9 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAlumniIndexRouteImport } from './routes/_app.alumni.index'
+import { Route as AppAlumniNewRouteImport } from './routes/_app.alumni.new'
+import { Route as AppAlumniIdRouteImport } from './routes/_app.alumni.$id'
+import { Route as AppAlumniIdEditRouteImport } from './routes/_app.alumni.$id.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -39,18 +42,39 @@ const AppAlumniIndexRoute = AppAlumniIndexRouteImport.update({
   path: '/alumni/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAlumniNewRoute = AppAlumniNewRouteImport.update({
+  id: '/alumni/new',
+  path: '/alumni/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlumniIdRoute = AppAlumniIdRouteImport.update({
+  id: '/alumni/$id',
+  path: '/alumni/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlumniIdEditRoute = AppAlumniIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AppAlumniIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
+  '/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/alumni/new': typeof AppAlumniNewRoute
   '/alumni/': typeof AppAlumniIndexRoute
+  '/alumni/$id/edit': typeof AppAlumniIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
+  '/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/alumni/new': typeof AppAlumniNewRoute
   '/alumni': typeof AppAlumniIndexRoute
+  '/alumni/$id/edit': typeof AppAlumniIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -58,20 +82,40 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/_app/alumni/new': typeof AppAlumniNewRoute
   '/_app/alumni/': typeof AppAlumniIndexRoute
+  '/_app/alumni/$id/edit': typeof AppAlumniIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/alumni/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/alumni/$id'
+    | '/alumni/new'
+    | '/alumni/'
+    | '/alumni/$id/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/alumni'
+  to:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/alumni/$id'
+    | '/alumni/new'
+    | '/alumni'
+    | '/alumni/$id/edit'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
     | '/_app/dashboard'
+    | '/_app/alumni/$id'
+    | '/_app/alumni/new'
     | '/_app/alumni/'
+    | '/_app/alumni/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,16 +161,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAlumniIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/alumni/new': {
+      id: '/_app/alumni/new'
+      path: '/alumni/new'
+      fullPath: '/alumni/new'
+      preLoaderRoute: typeof AppAlumniNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alumni/$id': {
+      id: '/_app/alumni/$id'
+      path: '/alumni/$id'
+      fullPath: '/alumni/$id'
+      preLoaderRoute: typeof AppAlumniIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alumni/$id/edit': {
+      id: '/_app/alumni/$id/edit'
+      path: '/edit'
+      fullPath: '/alumni/$id/edit'
+      preLoaderRoute: typeof AppAlumniIdEditRouteImport
+      parentRoute: typeof AppAlumniIdRoute
+    }
   }
 }
 
+interface AppAlumniIdRouteChildren {
+  AppAlumniIdEditRoute: typeof AppAlumniIdEditRoute
+}
+
+const AppAlumniIdRouteChildren: AppAlumniIdRouteChildren = {
+  AppAlumniIdEditRoute: AppAlumniIdEditRoute,
+}
+
+const AppAlumniIdRouteWithChildren = AppAlumniIdRoute._addFileChildren(
+  AppAlumniIdRouteChildren,
+)
+
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppAlumniIdRoute: typeof AppAlumniIdRouteWithChildren
+  AppAlumniNewRoute: typeof AppAlumniNewRoute
   AppAlumniIndexRoute: typeof AppAlumniIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppAlumniIdRoute: AppAlumniIdRouteWithChildren,
+  AppAlumniNewRoute: AppAlumniNewRoute,
   AppAlumniIndexRoute: AppAlumniIndexRoute,
 }
 
