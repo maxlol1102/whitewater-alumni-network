@@ -10,7 +10,7 @@ import { useAuth, IDENTITY_LABEL, isActive, type IdentityKey } from "@/lib/auth"
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
-const SWITCHER: IdentityKey[] = ["super_admin", "staff_faculty", "staff_student", "invited", "disabled"];
+const SWITCHER: IdentityKey[] = ["admin", "faculty_user", "student_user", "invited", "disabled"];
 
 function LoginPage() {
   const { user, signInAs } = useAuth();

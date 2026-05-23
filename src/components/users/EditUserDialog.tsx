@@ -4,20 +4,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { AccountRole, DepartmentRole, Profile, UserStatus } from "@/mocks";
+import type { UserCategory, Profile, UserStatus } from "@/mocks";
 
 export type EditPayload = {
   full_name: string;
-  account_role: AccountRole;
-  department_role: DepartmentRole | null;
-  status: UserStatus;
+  user_category: UserCategory | null;
+  status: Extract<UserStatus, "invited" | "active" | "disabled">;
 };
 
 export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; onSubmit: (p: EditPayload) => void; onCancel: () => void }) {
+  const isAdmin = user.account_role === "admin";
   const [fullName, setFullName] = useState(user.full_name);
-  const [accountRole, setAccountRole] = useState<AccountRole>(user.account_role);
-  const [departmentRole, setDepartmentRole] = useState<DepartmentRole>(user.department_role ?? "faculty");
-  const [status, setStatus] = useState<UserStatus>(user.status);
+  const [userCategory, setUserCategory] = useState<UserCategory>(user.user_category ?? "faculty");
+  const [status, setStatus] = useState<EditPayload["status"]>(
+    user.status === "deleted" ? "disabled" : (user.status as EditPayload["status"]),
+  );
   const [error, setError] = useState<string | null>(null);
 
   function handle(e: React.FormEvent) {
@@ -26,8 +27,7 @@ export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; on
     if (fullName.trim().length < 2) return setError("Full name is required.");
     onSubmit({
       full_name: fullName.trim(),
-      account_role: accountRole,
-      department_role: accountRole === "staff" ? departmentRole : null,
+      user_category: isAdmin ? null : userCategory,
       status,
     });
   }
@@ -48,19 +48,13 @@ export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; on
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Account role</Label>
-            <Select value={accountRole} onValueChange={(v) => setAccountRole(v as AccountRole)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="staff">Staff</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Role</Label>
+            <Input value={isAdmin ? "Admin" : "User"} disabled />
           </div>
-          {accountRole === "staff" && (
+          {!isAdmin && (
             <div className="space-y-1.5">
-              <Label>Department role</Label>
-              <Select value={departmentRole} onValueChange={(v) => setDepartmentRole(v as DepartmentRole)}>
+              <Label>User category</Label>
+              <Select value={userCategory} onValueChange={(v) => setUserCategory(v as UserCategory)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="faculty">Faculty</SelectItem>
@@ -71,8 +65,8 @@ export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; on
           )}
         </div>
         <div className="space-y-1.5">
-          <Label>Status</Label>
-          <Select value={status} onValueChange={(v) => setStatus(v as UserStatus)}>
+          <Label>Access state</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v as EditPayload["status"])} disabled={isAdmin}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="invited">Invited</SelectItem>
@@ -80,6 +74,7 @@ export function EditUserDialog({ user, onSubmit, onCancel }: { user: Profile; on
               <SelectItem value="disabled">Disabled</SelectItem>
             </SelectContent>
           </Select>
+          {isAdmin && <p className="text-xs text-muted-foreground">The admin account is always active.</p>}
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
