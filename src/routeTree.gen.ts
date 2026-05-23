@@ -19,6 +19,8 @@ import { Route as AppCampaignsIndexRouteImport } from './routes/_app.campaigns.i
 import { Route as AppAlumniIndexRouteImport } from './routes/_app.alumni.index'
 import { Route as AppSurveysNewRouteImport } from './routes/_app.surveys.new'
 import { Route as AppSurveysIdRouteImport } from './routes/_app.surveys.$id'
+import { Route as AppSettingsUsersRouteImport } from './routes/_app.settings.users'
+import { Route as AppSettingsAuditLogRouteImport } from './routes/_app.settings.audit-log'
 import { Route as AppCampaignsNewRouteImport } from './routes/_app.campaigns.new'
 import { Route as AppCampaignsIdRouteImport } from './routes/_app.campaigns.$id'
 import { Route as AppAlumniNewRouteImport } from './routes/_app.alumni.new'
@@ -76,6 +78,16 @@ const AppSurveysIdRoute = AppSurveysIdRouteImport.update({
   path: '/surveys/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
+  id: '/settings/users',
+  path: '/settings/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsAuditLogRoute = AppSettingsAuditLogRouteImport.update({
+  id: '/settings/audit-log',
+  path: '/settings/audit-log',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCampaignsNewRoute = AppCampaignsNewRouteImport.update({
   id: '/campaigns/new',
   path: '/campaigns/new',
@@ -121,6 +133,8 @@ export interface FileRoutesByFullPath {
   '/alumni/new': typeof AppAlumniNewRoute
   '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
   '/campaigns/new': typeof AppCampaignsNewRoute
+  '/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/settings/users': typeof AppSettingsUsersRoute
   '/surveys/$id': typeof AppSurveysIdRouteWithChildren
   '/surveys/new': typeof AppSurveysNewRoute
   '/alumni/': typeof AppAlumniIndexRoute
@@ -139,6 +153,8 @@ export interface FileRoutesByTo {
   '/alumni/new': typeof AppAlumniNewRoute
   '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
   '/campaigns/new': typeof AppCampaignsNewRoute
+  '/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/settings/users': typeof AppSettingsUsersRoute
   '/surveys/$id': typeof AppSurveysIdRouteWithChildren
   '/surveys/new': typeof AppSurveysNewRoute
   '/alumni': typeof AppAlumniIndexRoute
@@ -159,6 +175,8 @@ export interface FileRoutesById {
   '/_app/alumni/new': typeof AppAlumniNewRoute
   '/_app/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
   '/_app/campaigns/new': typeof AppCampaignsNewRoute
+  '/_app/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/_app/settings/users': typeof AppSettingsUsersRoute
   '/_app/surveys/$id': typeof AppSurveysIdRouteWithChildren
   '/_app/surveys/new': typeof AppSurveysNewRoute
   '/_app/alumni/': typeof AppAlumniIndexRoute
@@ -179,6 +197,8 @@ export interface FileRouteTypes {
     | '/alumni/new'
     | '/campaigns/$id'
     | '/campaigns/new'
+    | '/settings/audit-log'
+    | '/settings/users'
     | '/surveys/$id'
     | '/surveys/new'
     | '/alumni/'
@@ -197,6 +217,8 @@ export interface FileRouteTypes {
     | '/alumni/new'
     | '/campaigns/$id'
     | '/campaigns/new'
+    | '/settings/audit-log'
+    | '/settings/users'
     | '/surveys/$id'
     | '/surveys/new'
     | '/alumni'
@@ -216,6 +238,8 @@ export interface FileRouteTypes {
     | '/_app/alumni/new'
     | '/_app/campaigns/$id'
     | '/_app/campaigns/new'
+    | '/_app/settings/audit-log'
+    | '/_app/settings/users'
     | '/_app/surveys/$id'
     | '/_app/surveys/new'
     | '/_app/alumni/'
@@ -302,6 +326,20 @@ declare module '@tanstack/react-router' {
       path: '/surveys/$id'
       fullPath: '/surveys/$id'
       preLoaderRoute: typeof AppSurveysIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/users': {
+      id: '/_app/settings/users'
+      path: '/settings/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof AppSettingsUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/audit-log': {
+      id: '/_app/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/settings/audit-log'
+      preLoaderRoute: typeof AppSettingsAuditLogRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/campaigns/new': {
@@ -399,6 +437,8 @@ interface AppRouteChildren {
   AppAlumniNewRoute: typeof AppAlumniNewRoute
   AppCampaignsIdRoute: typeof AppCampaignsIdRouteWithChildren
   AppCampaignsNewRoute: typeof AppCampaignsNewRoute
+  AppSettingsAuditLogRoute: typeof AppSettingsAuditLogRoute
+  AppSettingsUsersRoute: typeof AppSettingsUsersRoute
   AppSurveysIdRoute: typeof AppSurveysIdRouteWithChildren
   AppSurveysNewRoute: typeof AppSurveysNewRoute
   AppAlumniIndexRoute: typeof AppAlumniIndexRoute
@@ -413,6 +453,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppAlumniNewRoute: AppAlumniNewRoute,
   AppCampaignsIdRoute: AppCampaignsIdRouteWithChildren,
   AppCampaignsNewRoute: AppCampaignsNewRoute,
+  AppSettingsAuditLogRoute: AppSettingsAuditLogRoute,
+  AppSettingsUsersRoute: AppSettingsUsersRoute,
   AppSurveysIdRoute: AppSurveysIdRouteWithChildren,
   AppSurveysNewRoute: AppSurveysNewRoute,
   AppAlumniIndexRoute: AppAlumniIndexRoute,
