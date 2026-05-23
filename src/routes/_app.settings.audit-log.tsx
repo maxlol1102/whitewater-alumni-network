@@ -23,7 +23,7 @@ const SEVERITY_STYLES: Record<AuditLog["severity"], string> = {
 function AuditLogPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && user.role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
 
   const [q, setQ] = useState("");
   const [actor, setActor] = useState("all");

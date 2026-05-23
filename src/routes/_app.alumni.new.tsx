@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_app/alumni/new")({ component: NewAlumni 
 function NewAlumni() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && !canEdit(user.role)) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => { if (user && !canEdit(user)) navigate({ to: "/dashboard" }); }, [user, navigate]);
   return (
     <PageContainer>
       <Breadcrumbs items={[{ label: "Alumni", to: "/alumni" }, { label: "New" }]} />
