@@ -1,81 +1,213 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal } from "lucide-react";
+import { UserPlus, MoreHorizontal, Search } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
-import { MOCK_USERS, type Profile, type Role } from "@/mocks";
+import { MOCK_USERS, type Profile, type AccountRole, type DepartmentRole, type UserStatus } from "@/mocks";
 import { useAuth } from "@/lib/auth";
+import { guardDelete, guardDisable, guardRoleChange } from "@/lib/user-guards";
+import { InviteUserDialog, type InvitePayload } from "@/components/users/InviteUserDialog";
+import { EditUserDialog, type EditPayload } from "@/components/users/EditUserDialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/settings/users")({ component: UsersPage });
 
-const ROLE_LABEL: Record<Role, string> = { super_admin: "Super Admin", admin: "Admin", faculty: "Faculty" };
-const ROLE_STYLES: Record<Role, string> = {
-  super_admin: "bg-primary/10 text-primary border-primary/20",
-  admin: "bg-blue-100 text-blue-800 border-blue-200",
-  faculty: "bg-muted text-muted-foreground border-transparent",
+const ACCOUNT_LABEL: Record<AccountRole, string> = { super_admin: "Super Admin", staff: "Staff" };
+const DEPT_LABEL: Record<DepartmentRole, string> = { faculty: "Faculty", student: "Student" };
+const STATUS_STYLES: Record<UserStatus, string> = {
+  invited: "bg-amber-100 text-amber-800 border-amber-200",
+  active: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  disabled: "bg-muted text-muted-foreground border-transparent",
+  deleted: "bg-destructive/10 text-destructive border-destructive/20",
 };
+
+type ActionType = "disable" | "reactivate" | "delete" | "resend" | "cancel_invite" | null;
+
+function fmtDate(d: string | null) { return d ? new Date(d).toLocaleDateString() : "—"; }
 
 function UsersPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => { if (user && user.account_role !== "super_admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+
   const [users, setUsers] = useState<Profile[]>(MOCK_USERS);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editUser, setEditUser] = useState<Profile | null>(null);
   const [actionUser, setActionUser] = useState<Profile | null>(null);
-  const [actionType, setActionType] = useState<"disable" | "reactivate" | "delete" | null>(null);
+  const [actionType, setActionType] = useState<ActionType>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  const superAdminCount = users.filter((u) => u.role === "super_admin" && !u.disabled_at).length;
+  // Filters
+  const [q, setQ] = useState("");
+  const [fStatus, setFStatus] = useState<string>("all");
+  const [fAccount, setFAccount] = useState<string>("all");
+  const [fDept, setFDept] = useState<string>("all");
 
-  function isSelf(u: Profile) { return user?.id === u.id; }
+  const rows = useMemo(() => users.filter((u) => {
+    if (!showDeleted && u.status === "deleted") return false;
+    if (fStatus !== "all" && u.status !== fStatus) return false;
+    if (fAccount !== "all" && u.account_role !== fAccount) return false;
+    if (fDept !== "all" && u.department_role !== fDept) return false;
+    if (q && !`${u.full_name} ${u.email}`.toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  }), [users, showDeleted, fStatus, fAccount, fDept, q]);
 
-  function changeRole(u: Profile, role: Role) {
-    if (isSelf(u) && role === "super_admin" && u.role !== "super_admin") {
-      toast.error("You cannot promote yourself to super admin");
-      return;
-    }
-    if (u.role === "super_admin" && role !== "super_admin" && superAdminCount <= 1) {
-      toast.error("At least one super admin must remain");
-      return;
-    }
-    setUsers((list) => list.map((x) => x.id === u.id ? { ...x, role } : x));
-    toast.success(`Role changed to ${ROLE_LABEL[role]} (mock)`);
+  if (!user) return null;
+
+  function audit(action: string, summary: string) {
+    // Phase A: mock audit recording, surfaced as a subtle log via console.
+    // Phase B will write to audit_logs through manage-user / invite-user edge fns.
+    // eslint-disable-next-line no-console
+    console.info(`[audit] ${action} — ${summary}`);
   }
 
-  function confirmAction() {
-    if (!actionUser || !actionType) return;
-    if (isSelf(actionUser)) { toast.error("You cannot perform this action on yourself"); return; }
-    if (actionUser.role === "super_admin" && (actionType === "disable" || actionType === "delete") && superAdminCount <= 1) {
-      toast.error("At least one super admin must remain"); return;
+  function handleInvite(p: InvitePayload) {
+    if (users.some((u) => u.email.toLowerCase() === p.email)) {
+      toast.error("A user with that email already exists.");
+      return;
     }
-    setUsers((list) => {
-      if (actionType === "delete") return list.filter((x) => x.id !== actionUser.id);
-      if (actionType === "disable") return list.map((x) => x.id === actionUser.id ? { ...x, disabled_at: new Date().toISOString() } : x);
-      if (actionType === "reactivate") return list.map((x) => x.id === actionUser.id ? { ...x, disabled_at: null } : x);
-      return list;
-    });
-    toast.success(`User ${actionType} (mock) — audit log entry recorded`);
+    const now = new Date().toISOString();
+    const newUser: Profile = {
+      id: `u-${Math.random().toString(36).slice(2, 8)}`,
+      full_name: p.full_name,
+      email: p.email,
+      account_role: p.account_role,
+      department_role: p.department_role,
+      status: "invited",
+      invited_at: now,
+      accepted_at: null,
+      disabled_at: null,
+      deleted_at: null,
+      last_sign_in_at: null,
+      created_at: now,
+    };
+    setUsers((prev) => [newUser, ...prev]);
+    audit("user.invited", `Invited ${p.email} as ${p.account_role}${p.department_role ? ` (${p.department_role})` : ""}`);
+    toast.success(`Invitation sent to ${p.email}.`);
+    setInviteOpen(false);
+  }
+
+  function handleEdit(target: Profile, p: EditPayload) {
+    const check = guardRoleChange(user!, target, p.account_role, p.department_role, users);
+    if (!check.ok) {
+      audit("permission.denied", check.reason);
+      toast.error(check.reason);
+      return;
+    }
+    const before = { full_name: target.full_name, account_role: target.account_role, department_role: target.department_role, status: target.status };
+    setUsers((prev) => prev.map((x) => x.id === target.id ? {
+      ...x,
+      full_name: p.full_name,
+      account_role: p.account_role,
+      department_role: p.department_role,
+      status: p.status,
+      disabled_at: p.status === "disabled" ? (x.disabled_at ?? new Date().toISOString()) : null,
+    } : x));
+    if (before.account_role !== p.account_role) audit("user.account_role_changed", `${target.email}: ${before.account_role} → ${p.account_role}`);
+    if (before.department_role !== p.department_role) audit("user.department_role_changed", `${target.email}: ${before.department_role ?? "—"} → ${p.department_role ?? "—"}`);
+    if (before.full_name !== p.full_name || before.status !== p.status) audit("user.updated", `${target.email}: profile updated`);
+    toast.success("User updated.");
+    setEditUser(null);
+  }
+
+  function runAction() {
+    if (!actionUser || !actionType) return;
+    const t = actionUser;
+    if (actionType === "delete") {
+      const r = guardDelete(user!, t, users);
+      if (!r.ok) { audit("permission.denied", r.reason); toast.error(r.reason); return; }
+      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, status: "deleted", deleted_at: new Date().toISOString() } : x));
+      audit("user.deleted", `Deleted ${t.email}`);
+      toast.success("User deleted.");
+    } else if (actionType === "disable") {
+      const r = guardDisable(user!, t, users);
+      if (!r.ok) { audit("permission.denied", r.reason); toast.error(r.reason); return; }
+      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, status: "disabled", disabled_at: new Date().toISOString() } : x));
+      audit("user.disabled", `Disabled ${t.email}`);
+      toast.success("User disabled.");
+    } else if (actionType === "reactivate") {
+      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, status: "active", disabled_at: null } : x));
+      audit("user.reactivated", `Reactivated ${t.email}`);
+      toast.success("User reactivated.");
+    } else if (actionType === "resend") {
+      setUsers((prev) => prev.map((x) => x.id === t.id ? { ...x, invited_at: new Date().toISOString() } : x));
+      audit("user.invite_resent", `Resent invite to ${t.email}`);
+      toast.success(`Invitation resent to ${t.email}.`);
+    } else if (actionType === "cancel_invite") {
+      setUsers((prev) => prev.filter((x) => x.id !== t.id));
+      audit("user.invite_cancelled", `Cancelled invite for ${t.email}`);
+      toast.success("Invitation cancelled.");
+    }
     setActionUser(null); setActionType(null);
   }
 
+  const actionCopy: Record<Exclude<ActionType, null>, { title: string; desc: string }> = {
+    delete: { title: "Delete user?", desc: "This removes the user account. An audit log entry will be recorded." },
+    disable: { title: "Disable user?", desc: "The user will lose access to the app until reactivated." },
+    reactivate: { title: "Reactivate user?", desc: "The user will regain access to the app immediately." },
+    resend: { title: "Resend invitation?", desc: "A new invitation email will be sent." },
+    cancel_invite: { title: "Cancel invitation?", desc: "The pending invitation will be revoked." },
+  };
+
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Settings" }, { label: "Users" }]} />
-      <PageHeader title="Users" description="Manage staff accounts for the alumni platform." actions={
-        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-          <DialogTrigger asChild><Button><UserPlus className="size-4" />Invite user</Button></DialogTrigger>
-          <InviteDialog onDone={() => setInviteOpen(false)} />
-        </Dialog>
-      } />
+      <Breadcrumbs items={[{ label: "Settings" }, { label: "Department Users" }]} />
+      <PageHeader
+        eyebrow="01 · Access"
+        title="Department Users"
+        description="Manage super admins, staff faculty, and staff students for the alumni platform."
+        actions={
+          <Button onClick={() => setInviteOpen(true)}><UserPlus className="size-4" />Invite User</Button>
+        }
+      />
+
+      <Card className="p-4 mb-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-2">
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or email…" className="pl-8" />
+          </div>
+          <Select value={fStatus} onValueChange={setFStatus}>
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="invited">Invited</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="disabled">Disabled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={fAccount} onValueChange={setFAccount}>
+            <SelectTrigger><SelectValue placeholder="Account role" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All account roles</SelectItem>
+              <SelectItem value="super_admin">Super Admin</SelectItem>
+              <SelectItem value="staff">Staff</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={fDept} onValueChange={setFDept}>
+            <SelectTrigger><SelectValue placeholder="Department role" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All department roles</SelectItem>
+              <SelectItem value="faculty">Faculty</SelectItem>
+              <SelectItem value="student">Student</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <Switch id="show-deleted" checked={showDeleted} onCheckedChange={setShowDeleted} />
+          <Label htmlFor="show-deleted" className="text-xs text-muted-foreground">Show deleted</Label>
+        </div>
+      </Card>
 
       <Card className="overflow-hidden">
         <Table>
@@ -83,110 +215,102 @@ function UsersPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Account Role</TableHead>
+              <TableHead>Department Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Last sign-in</TableHead>
+              <TableHead>Invite Sent</TableHead>
+              <TableHead>Accepted</TableHead>
+              <TableHead>Last Sign-in</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => (
-              <TableRow key={u.id}>
-                <TableCell className="font-medium">{u.full_name} {isSelf(u) && <span className="text-xs text-muted-foreground">(you)</span>}</TableCell>
-                <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                <TableCell><Badge className={ROLE_STYLES[u.role]}>{ROLE_LABEL[u.role]}</Badge></TableCell>
-                <TableCell>{u.disabled_at ? <Badge variant="destructive">Disabled</Badge> : <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Active</Badge>}</TableCell>
-                <TableCell className="text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="text-muted-foreground">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : "—"}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <div className="px-2 py-1.5 text-xs text-muted-foreground">Change role</div>
-                      {(["super_admin", "admin", "faculty"] as Role[]).map((r) => (
-                        <DropdownMenuItem key={r} disabled={u.role === r} onClick={() => changeRole(u, r)}>{ROLE_LABEL[r]}</DropdownMenuItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      {u.disabled_at ? (
-                        <DropdownMenuItem onClick={() => { setActionUser(u); setActionType("reactivate"); }}>Reactivate</DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem disabled={isSelf(u)} onClick={() => { setActionUser(u); setActionType("disable"); }}>Disable</DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem disabled={isSelf(u)} className="text-destructive" onClick={() => { setActionUser(u); setActionType("delete"); }}>Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {rows.map((u) => {
+              const isSelf = user.id === u.id;
+              return (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">
+                    {u.full_name} {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs">{u.email}</TableCell>
+                  <TableCell><Badge variant="outline">{ACCOUNT_LABEL[u.account_role]}</Badge></TableCell>
+                  <TableCell>{u.department_role ? <Badge variant="secondary">{DEPT_LABEL[u.department_role]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell><Badge className={STATUS_STYLES[u.status]}>{u.status}</Badge></TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{fmtDate(u.invited_at)}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{fmtDate(u.accepted_at)}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{fmtDate(u.last_sign_in_at)}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8"><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {u.status === "invited" && (
+                          <>
+                            <DropdownMenuItem onClick={() => { setActionUser(u); setActionType("resend"); }}>Resend invite</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setActionUser(u); setActionType("cancel_invite"); }}>Cancel invite</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEditUser(u)}>Edit role/profile</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => { setActionUser(u); setActionType("delete"); }}>Delete</DropdownMenuItem>
+                          </>
+                        )}
+                        {u.status === "active" && (
+                          <>
+                            <DropdownMenuItem onClick={() => setEditUser(u)}>Edit role/profile</DropdownMenuItem>
+                            <DropdownMenuItem disabled={isSelf} onClick={() => { setActionUser(u); setActionType("disable"); }}>Disable</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem disabled={isSelf} className="text-destructive" onClick={() => { setActionUser(u); setActionType("delete"); }}>Delete</DropdownMenuItem>
+                          </>
+                        )}
+                        {u.status === "disabled" && (
+                          <>
+                            <DropdownMenuItem onClick={() => { setActionUser(u); setActionType("reactivate"); }}>Reactivate</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => { setActionUser(u); setActionType("delete"); }}>Delete</DropdownMenuItem>
+                          </>
+                        )}
+                        {u.status === "deleted" && (
+                          <DropdownMenuItem disabled>Deleted</DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
+        {rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No users match your filters.</div>}
       </Card>
 
+      {/* Invite dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <InviteUserDialog onSubmit={handleInvite} onCancel={() => setInviteOpen(false)} />
+      </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editUser} onOpenChange={(o) => !o && setEditUser(null)}>
+        {editUser && <EditUserDialog user={editUser} onSubmit={(p) => handleEdit(editUser, p)} onCancel={() => setEditUser(null)} />}
+      </Dialog>
+
+      {/* Confirm action */}
       <AlertDialog open={!!actionType} onOpenChange={(o) => { if (!o) { setActionUser(null); setActionType(null); } }}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {actionType === "delete" && `Delete ${actionUser?.full_name}?`}
-              {actionType === "disable" && `Disable ${actionUser?.full_name}?`}
-              {actionType === "reactivate" && `Reactivate ${actionUser?.full_name}?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {actionType === "delete" && "This will remove the user's account. In Phase B this will run through a secure Edge Function and write an audit log entry."}
-              {actionType === "disable" && "The user will lose access to the app until reactivated."}
-              {actionType === "reactivate" && "The user will regain access to the app immediately."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAction}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
+          {actionType && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{actionCopy[actionType].title}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {actionCopy[actionType].desc}
+                  {actionUser && <span className="block mt-2 font-mono text-xs">{actionUser.email}</span>}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={runAction}>Confirm</AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </PageContainer>
-  );
-}
-
-function InviteDialog({ onDone }: { onDone: () => void }) {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [role, setRole] = useState<Role>("faculty");
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email || !name) { toast.error("Email and name are required"); return; }
-    toast.success(`Invitation sent to ${email} (mock)`);
-    onDone();
-  }
-
-  return (
-    <DialogContent>
-      <DialogHeader><DialogTitle>Invite a new user</DialogTitle></DialogHeader>
-      <form onSubmit={submit} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label>Email</Label>
-          <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Full name</Label>
-          <Input required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Role</Label>
-          <Select value={role} onValueChange={(v) => setRole(v as Role)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="super_admin">Super Admin</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="faculty">Faculty</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onDone}>Cancel</Button>
-          <Button type="submit">Send invite</Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
   );
 }
