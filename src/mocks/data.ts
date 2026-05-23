@@ -118,7 +118,7 @@ export type AuditLog = {
 };
 
 export const MOCK_USERS: Profile[] = [
-  { id: "u-super", full_name: "Pat Reynolds", email: "pat.reynolds@uww.edu", account_role: "admin", user_category: null, status: "active", invited_at: "2024-01-10T10:00:00Z", accepted_at: "2024-01-12T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-22T14:21:00Z", created_at: "2024-01-12T10:00:00Z" },
+  { id: "u-admin", full_name: "UWW CS Department", email: "cs-admin@uww.edu", account_role: "admin", user_category: null, status: "active", invited_at: "2024-01-10T10:00:00Z", accepted_at: "2024-01-12T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-22T14:21:00Z", created_at: "2024-01-12T10:00:00Z" },
   { id: "u-fac-1", full_name: "Dr. Morgan Choi", email: "morgan.choi@uww.edu", account_role: "user", user_category: "faculty", status: "active", invited_at: "2024-04-28T10:00:00Z", accepted_at: "2024-05-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-20T19:02:00Z", created_at: "2024-05-01T10:00:00Z" },
   { id: "u-fac-2", full_name: "Dr. Alex Park", email: "alex.park@uww.edu", account_role: "user", user_category: "faculty", status: "active", invited_at: "2024-08-29T10:00:00Z", accepted_at: "2024-09-01T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-18T12:00:00Z", created_at: "2024-09-01T10:00:00Z" },
   { id: "u-stu-1", full_name: "Riley Nguyen", email: "riley.nguyen@uww.edu", account_role: "user", user_category: "student", status: "active", invited_at: "2025-08-10T10:00:00Z", accepted_at: "2025-08-15T10:00:00Z", disabled_at: null, deleted_at: null, last_sign_in_at: "2026-05-19T11:45:00Z", created_at: "2025-08-15T10:00:00Z" },
