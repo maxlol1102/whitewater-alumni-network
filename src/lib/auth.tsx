@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { MOCK_USERS, type Profile } from "@/mocks";
+import type { Profile } from "@/mocks";
+import { supabase } from "@/integrations/supabase/client";
 
 export type IdentityKey =
   | "admin"
@@ -16,49 +17,75 @@ export const IDENTITY_LABEL: Record<IdentityKey, string> = {
   disabled: "Disabled User (no access)",
 };
 
-const IDENTITY_USER_ID: Record<IdentityKey, string> = {
-  admin: "u-admin",
-  faculty_user: "u-fac-1",
-  student_user: "u-stu-1",
-  invited: "u-inv-1",
-  disabled: "u-dis-1",
-};
-
 type AuthCtx = {
   user: Profile | null;
   identity: IdentityKey | null;
-  signInAs: (id: IdentityKey) => void;
-  signOut: () => void;
+  loading: boolean;
+  signOut: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
-const KEY = "uww-mock-auth-user-id";
+
+async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+  return (data as Profile | null) ?? null;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const id = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
-    if (id) setUser(MOCK_USERS.find((m) => m.id === id) ?? null);
+    let mounted = true;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id;
+      if (!uid) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      // Defer profile fetch to avoid deadlock inside the callback
+      setTimeout(async () => {
+        const p = await fetchProfile(uid);
+        if (mounted) {
+          setUser(p);
+          setLoading(false);
+        }
+      }, 0);
+    });
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user?.id;
+      if (!uid) {
+        if (mounted) setLoading(false);
+        return;
+      }
+      const p = await fetchProfile(uid);
+      if (mounted) {
+        setUser(p);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  function signInAs(id: IdentityKey) {
-    const userId = IDENTITY_USER_ID[id];
-    const u = MOCK_USERS.find((m) => m.id === userId) ?? null;
-    if (u) {
-      localStorage.setItem(KEY, u.id);
-      setUser(u);
-    }
-  }
-
-  function signOut() {
-    localStorage.removeItem(KEY);
+  async function signOut() {
+    await supabase.auth.signOut();
     setUser(null);
   }
 
   const identity = user ? identityOf(user) : null;
 
-  return <Ctx.Provider value={{ user, identity, signInAs, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, identity, loading, signOut }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {
@@ -78,7 +105,6 @@ export function isActive(user: Profile | null | undefined): user is Profile {
   return !!user && user.status === "active";
 }
 
-/** Routes available to active staff. */
 function userCanRoute(route: string): boolean {
   return (
     route === "/dashboard" ||
@@ -93,7 +119,6 @@ export function canAccess(user: Profile | null | undefined, route: string): bool
   return userCanRoute(route);
 }
 
-/** Only super_admin can mutate domain data. */
 export function canEdit(user: Profile | null | undefined): boolean {
   return isActive(user) && user.account_role === "admin";
 }
