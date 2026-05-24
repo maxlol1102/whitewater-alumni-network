@@ -64,9 +64,9 @@ function LoginPage() {
 
         <div className="flex-1 grid place-items-center px-6 sm:px-12 py-12">
           <div className="w-full max-w-[400px]">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in to your account</h1>
+            <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Use the email associated with your invitation.
+              Sign in to your account
             </p>
 
             <form onSubmit={submit} className="mt-8 space-y-5">
@@ -75,6 +75,7 @@ function LoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
