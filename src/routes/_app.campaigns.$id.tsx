@@ -1,18 +1,20 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Send, Pencil, Trash2 } from "lucide-react";
 import { Breadcrumbs, PageContainer } from "@/components/layout/Page";
-import { MOCK_CAMPAIGNS, type Campaign } from "@/mocks";
 import { useAuth, canEdit } from "@/lib/auth";
 import { toast } from "sonner";
+import { deleteCampaign, getCampaign, sendCampaign, type CampaignRow } from "@/lib/campaigns.functions";
 
 export const Route = createFileRoute("/_app/campaigns/$id")({ component: CampaignDetail });
 
-const STATUS_STYLES: Record<Campaign["status"], string> = {
+const STATUS_STYLES: Record<CampaignRow["status"], string> = {
   draft: "bg-muted text-muted-foreground border-transparent",
   scheduled: "bg-warning/15 text-warning-foreground border-warning/30",
   sending: "bg-blue-100 text-blue-800 border-blue-200",
@@ -24,22 +26,40 @@ function CampaignDetail() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const canMutate = canEdit(user);
   useEffect(() => { if (user && user.account_role !== "admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
-  const initial = MOCK_CAMPAIGNS.find((c) => c.id === id);
-  const [campaign, setCampaign] = useState<Campaign | undefined>(initial);
 
+  const getFn = useServerFn(getCampaign);
+  const { data, isLoading } = useQuery({
+    queryKey: ["campaigns", id],
+    queryFn: () => getFn({ data: { id } }),
+    enabled: user?.account_role === "admin",
+  });
+  const campaign = data?.campaign;
+
+  const sendFn = useServerFn(sendCampaign);
+  const delFn = useServerFn(deleteCampaign);
+  const sendM = useMutation({
+    mutationFn: () => sendFn({ data: { id } }),
+    onSuccess: (r) => {
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      toast.success(`Sent to ${r.campaign.recipient_count} recipients`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const delM = useMutation({
+    mutationFn: () => delFn({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      toast.success("Draft campaign deleted");
+      navigate({ to: "/campaigns" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <PageContainer><p className="text-sm text-muted-foreground">Loading...</p></PageContainer>;
   if (!campaign) return <PageContainer><p>Not found.</p></PageContainer>;
-
-  function send() {
-    setCampaign({ ...campaign!, status: "sent", sent_at: new Date().toISOString() });
-    toast.success(`Sent to ${campaign!.recipient_count} recipients (mock)`);
-  }
-
-  function del() {
-    toast.success("Draft campaign deleted (mock)");
-    navigate({ to: "/campaigns" });
-  }
 
   return (
     <PageContainer>
@@ -73,7 +93,7 @@ function CampaignDetail() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={send}>Send campaign</AlertDialogAction>
+                      <AlertDialogAction onClick={() => sendM.mutate()}>Send campaign</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -88,7 +108,7 @@ function CampaignDetail() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={del}>Delete</AlertDialogAction>
+                      <AlertDialogAction onClick={() => delM.mutate()}>Delete</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
