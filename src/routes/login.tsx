@@ -123,19 +123,6 @@ function LoginPage() {
           </div>
         </div>
 
-        <div className="border-t border-border bg-surface-100">
-          <div className="px-6 sm:px-12 py-5 text-center text-sm text-muted-foreground">
-            New here? <span className="text-foreground">Ask your department admin for an invitation.</span>
-          </div>
-        </div>
-
-        <footer className="px-8 lg:px-12 py-6 flex items-center justify-between text-xs text-muted-foreground">
-          <span>© {new Date().getFullYear()} UWW CS</span>
-          <div className="flex items-center gap-5">
-            <a href="#" className="hover:text-foreground">Privacy</a>
-            <a href="#" className="hover:text-foreground">Terms</a>
-          </div>
-        </footer>
       </div>
 
       {/* Right — gradient artwork */}
