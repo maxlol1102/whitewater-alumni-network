@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Mail } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
 import { useAuth, canEdit } from "@/lib/auth";
 import { listCampaigns, type CampaignRow } from "@/lib/campaigns.functions";
+import { CampaignForm } from "@/components/campaigns/CampaignForm";
 
 export const Route = createFileRoute("/_app/campaigns/")({ component: CampaignsList });
 
@@ -23,6 +25,7 @@ const STATUS_STYLES: Record<CampaignRow["status"], string> = {
 function CampaignsList() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
   useEffect(() => { if (user && user.account_role !== "admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
   const canMutate = canEdit(user);
 
@@ -37,12 +40,12 @@ function CampaignsList() {
   return (
     <PageContainer>
       <Breadcrumbs items={[{ label: "Campaigns" }]} />
-      <PageHeader title="Campaigns" description="Email campaigns sent to alumni segments." actions={canMutate && <Button onClick={() => navigate({ to: "/campaigns/new" })}><Plus className="size-4" />Create campaign</Button>} />
+      <PageHeader title="Campaigns" description="Email campaigns sent to alumni segments." actions={canMutate && <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Create campaign</Button>} />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : campaigns.length === 0 ? (
-        <EmptyState icon={Mail} title="No campaigns yet" description="Create your first campaign to email a segment of alumni." action={canMutate ? <Button onClick={() => navigate({ to: "/campaigns/new" })}><Plus className="size-4" />Create campaign</Button> : undefined} />
+        <EmptyState icon={Mail} title="No campaigns yet" description="Create your first campaign to email a segment of alumni." action={canMutate ? <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Create campaign</Button> : undefined} />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {campaigns.map((c) => (
@@ -62,6 +65,15 @@ function CampaignsList() {
           ))}
         </div>
       )}
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create campaign</DialogTitle>
+          </DialogHeader>
+          <CampaignForm mode="create" inDialog onClose={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

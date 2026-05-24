@@ -130,7 +130,7 @@ export function AlumniForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-24">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl mx-auto">
       <Section title="Basic Info">
         <Field label="Full name" error={errors.full_name?.message} required>
           <Input {...register("full_name")} />
@@ -246,7 +246,7 @@ export function AlumniForm({
         </Field>
       </Section>
 
-      <div className="fixed bottom-0 left-60 right-0 bg-background/95 backdrop-blur border-t p-4 flex justify-end gap-2 z-20">
+      <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={() => navigate({ to: "/alumni" })}>
           Cancel
         </Button>

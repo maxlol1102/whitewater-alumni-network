@@ -24,7 +24,7 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-export function CampaignForm({ mode, initial }: { mode: "create" | "edit"; initial?: CampaignRow }) {
+export function CampaignForm({ mode, initial, inDialog, onClose }: { mode: "create" | "edit"; initial?: CampaignRow; inDialog?: boolean; onClose?: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mentorOnly, setMentorOnly] = useState(initial?.filter_mentorship_only ?? false);
@@ -76,13 +76,14 @@ export function CampaignForm({ mode, initial }: { mode: "create" | "edit"; initi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       toast.success(mode === "create" ? "Draft campaign saved" : "Campaign updated");
-      navigate({ to: "/campaigns" });
+      if (onClose) onClose();
+      else navigate({ to: "/campaigns" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (
-    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="grid lg:grid-cols-[1fr_360px] gap-4 pb-24">
+    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className={inDialog ? "space-y-4" : "grid lg:grid-cols-[1fr_360px] gap-4 pb-24"}>
       <div className="space-y-4">
         <Card className="p-5 space-y-4">
           <div className="font-medium">Email content</div>
@@ -98,7 +99,7 @@ export function CampaignForm({ mode, initial }: { mode: "create" | "edit"; initi
           </div>
           <div className="space-y-1.5">
             <Label>Email body (HTML allowed) <span className="text-destructive">*</span></Label>
-            <Textarea rows={14} className="font-mono text-xs" {...register("body")} />
+            <Textarea rows={inDialog ? 8 : 14} className="font-mono text-xs" {...register("body")} />
             {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
           </div>
         </Card>
@@ -142,10 +143,17 @@ export function CampaignForm({ mode, initial }: { mode: "create" | "edit"; initi
         </Card>
       </div>
 
-      <div className="lg:col-span-2 fixed bottom-0 left-60 right-0 bg-background/95 backdrop-blur border-t p-4 flex justify-end gap-2 z-20">
-        <Button type="button" variant="outline" onClick={() => navigate({ to: "/campaigns" })}>Cancel</Button>
-        <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Saving..." : "Save as draft"}</Button>
-      </div>
+      {inDialog ? (
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="outline" onClick={() => onClose?.()}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Saving..." : "Save as draft"}</Button>
+        </div>
+      ) : (
+        <div className="lg:col-span-2 fixed bottom-0 left-60 right-0 bg-background/95 backdrop-blur border-t p-4 flex justify-end gap-2 z-20">
+          <Button type="button" variant="outline" onClick={() => navigate({ to: "/campaigns" })}>Cancel</Button>
+          <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Saving..." : "Save as draft"}</Button>
+        </div>
+      )}
     </form>
   );
 }
