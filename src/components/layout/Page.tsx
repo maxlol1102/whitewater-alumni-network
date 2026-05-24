@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 export function Breadcrumbs({ items }: { items: { label: string; to?: string }[] }) {
+  if (items.length < 2) return null;
   return (
     <nav className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
       {items.map((it, i) => (
