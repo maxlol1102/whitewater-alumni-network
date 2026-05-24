@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Download } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
-import { MOCK_AUDIT_LOGS, MOCK_USERS, type AuditLog } from "@/mocks";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { listAuditLogs, type AuditLogRow } from "@/lib/audit.functions";
+import { listUsers } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/_app/settings/audit-log")({ component: AuditLogPage });
 
-const SEVERITY_STYLES: Record<AuditLog["severity"], string> = {
+const SEVERITY_STYLES: Record<string, string> = {
   info: "bg-muted text-muted-foreground border-transparent",
   warning: "bg-warning/15 text-warning-foreground border-warning/30",
   critical: "bg-destructive/15 text-destructive border-destructive/30",
@@ -32,22 +35,38 @@ function AuditLogPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const actions = useMemo(() => Array.from(new Set(MOCK_AUDIT_LOGS.map((l) => l.action))), []);
-  const entities = useMemo(() => Array.from(new Set(MOCK_AUDIT_LOGS.map((l) => l.entity_type))), []);
+  const listFn = useServerFn(listAuditLogs);
+  const { data, isLoading } = useQuery({
+    queryKey: ["audit-logs"],
+    queryFn: () => listFn(),
+    enabled: user?.account_role === "admin",
+  });
+  const allRows = useMemo(() => data?.logs ?? [], [data]);
 
-  const rows = useMemo(() => MOCK_AUDIT_LOGS.filter((l) => {
-    if (q && !`${l.summary} ${l.entity_label} ${l.actor_email}`.toLowerCase().includes(q.toLowerCase())) return false;
+  const listUsersFn = useServerFn(listUsers);
+  const { data: usersData } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => listUsersFn(),
+    enabled: user?.account_role === "admin",
+  });
+  const users = usersData?.users ?? [];
+
+  const actions = useMemo(() => Array.from(new Set(allRows.map((l) => l.action))).sort(), [allRows]);
+  const entities = useMemo(() => Array.from(new Set(allRows.map((l) => l.entity_type))).sort(), [allRows]);
+
+  const rows = useMemo(() => allRows.filter((l: AuditLogRow) => {
+    if (q && !`${l.summary} ${l.entity_label ?? ""} ${l.actor_email ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
     if (actor !== "all" && l.actor_id !== actor) return false;
     if (action !== "all" && l.action !== action) return false;
     if (entity !== "all" && l.entity_type !== entity) return false;
     if (from && new Date(l.created_at) < new Date(from)) return false;
     if (to && new Date(l.created_at) > new Date(to)) return false;
     return true;
-  }), [q, actor, action, entity, from, to]);
+  }), [allRows, q, actor, action, entity, from, to]);
 
   function exportCsv() {
     const header = ["timestamp", "actor", "role", "action", "entity_type", "entity", "summary", "severity", "ip"];
-    const lines = [header.join(",")].concat(rows.map((r) => [r.created_at, r.actor_email, r.actor_role, r.action, r.entity_type, r.entity_label, `"${r.summary.replace(/"/g, '""')}"`, r.severity, r.ip_address ?? ""].join(",")));
+    const lines = [header.join(",")].concat(rows.map((r) => [r.created_at, r.actor_email ?? "", r.actor_role ?? "", r.action, r.entity_type, r.entity_label ?? "", `"${(r.summary ?? "").replace(/"/g, '""')}"`, r.severity, r.ip_address ?? ""].join(",")));
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "audit-log-export.csv"; a.click();
@@ -70,7 +89,7 @@ function AuditLogPage() {
             <SelectTrigger><SelectValue placeholder="Actor" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All actors</SelectItem>
-              {MOCK_USERS.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
+              {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={action} onValueChange={setAction}>
@@ -106,26 +125,31 @@ function AuditLogPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((l) => (
-              <TableRow key={l.id}>
-                <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</TableCell>
-                <TableCell>
-                  <div className="font-medium">{l.actor_email}</div>
-                  <div className="text-xs text-muted-foreground">{l.actor_role}</div>
-                </TableCell>
-                <TableCell><code className="text-xs bg-muted px-1.5 py-0.5 rounded">{l.action}</code></TableCell>
-                <TableCell>
-                  <div className="text-xs text-muted-foreground">{l.entity_type}</div>
-                  <div>{l.entity_label}</div>
-                </TableCell>
-                <TableCell className="max-w-xs"><div className="text-sm">{l.summary}</div></TableCell>
-                <TableCell><Badge className={`${SEVERITY_STYLES[l.severity]} capitalize`}>{l.severity}</Badge></TableCell>
-                <TableCell className="text-xs text-muted-foreground">{l.ip_address}</TableCell>
-              </TableRow>
-            ))}
+            {isLoading ? (
+              <TableRow><TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">Loading log…</TableCell></TableRow>
+            ) : rows.length === 0 ? (
+              <TableRow><TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">No log entries match your filters.</TableCell></TableRow>
+            ) : (
+              rows.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(l.created_at).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{l.actor_email ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground">{l.actor_role ?? ""}</div>
+                  </TableCell>
+                  <TableCell><code className="text-xs bg-muted px-1.5 py-0.5 rounded">{l.action}</code></TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground">{l.entity_type}</div>
+                    <div>{l.entity_label ?? "—"}</div>
+                  </TableCell>
+                  <TableCell className="max-w-xs"><div className="text-sm">{l.summary}</div></TableCell>
+                  <TableCell><Badge className={`${SEVERITY_STYLES[l.severity] ?? SEVERITY_STYLES.info} capitalize`}>{l.severity}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{l.ip_address ?? ""}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
-        {rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">No log entries match your filters.</div>}
       </Card>
     </PageContainer>
   );
