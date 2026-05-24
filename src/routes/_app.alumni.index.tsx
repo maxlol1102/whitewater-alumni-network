@@ -180,43 +180,51 @@ function AlumniList() {
         </div>
       </Card>
 
-      {isLoading ? (
-        <Card className="p-12 text-center text-sm text-muted-foreground">Loading alumni…</Card>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title={alumni.length === 0 ? "No alumni yet" : "No alumni match your filters"}
-          description={
-            alumni.length === 0
-              ? "Add your first alumni record or import a CSV to get started."
-              : "Try clearing some filters, or add a new alumni record."
-          }
-          action={
-            canMutate ? (
-              <Button onClick={() => navigate({ to: "/alumni/new" })}>
-                <Plus className="size-4" />
-                Add Alumni
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Job Title</TableHead>
+              <TableHead>Grad Year</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead>Mentorship</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Job Title</TableHead>
-                <TableHead>Grad Year</TableHead>
-                <TableHead>Tags</TableHead>
-                <TableHead>Mentorship</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-12">
+                  Loading alumni…
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((a) => (
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12">
+                  <EmptyState
+                    icon={Users}
+                    title={alumni.length === 0 ? "No alumni yet" : "No alumni match your filters"}
+                    description={
+                      alumni.length === 0
+                        ? "Add your first alumni record or import a CSV to get started."
+                        : "Try clearing some filters, or add a new alumni record."
+                    }
+                    action={
+                      canMutate ? (
+                        <Button onClick={() => navigate({ to: "/alumni/new" })}>
+                          <Plus className="size-4" />
+                          Add Alumni
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((a) => (
                 <TableRow
                   key={a.id}
                   className="cursor-pointer"
@@ -253,11 +261,11 @@ function AlumniList() {
                     </Link>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
       <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </PageContainer>
   );
