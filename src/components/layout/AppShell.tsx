@@ -24,7 +24,7 @@ export function AppShell() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="ml-[280px] min-h-screen px-10 py-12 overflow-auto">
+      <main className="ml-[280px] min-h-screen px-10 pb-12">
         <Outlet />
       </main>
     </div>
