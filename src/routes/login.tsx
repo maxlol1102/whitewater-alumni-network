@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, KeyRound, ShieldCheck } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { useAuth, isActive } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -117,27 +117,6 @@ function LoginPage() {
                 {submitting ? "Signing in…" : "Sign in"}
               </Button>
 
-              <div className="relative py-1">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center">
-                  <span className="bg-background px-3 text-xs text-muted-foreground">Or sign in with</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <button type="button" disabled className="w-full h-11 rounded-md border border-border bg-card hover:bg-surface-100 transition-colors flex items-center justify-center gap-2.5 text-sm font-medium opacity-60 cursor-not-allowed">
-                  <GoogleIcon className="size-4" />
-                  Google
-                </button>
-                <button type="button" disabled className="w-full h-11 rounded-md border border-border bg-card hover:bg-surface-100 transition-colors flex items-center justify-center gap-2.5 text-sm font-medium opacity-60 cursor-not-allowed">
-                  <KeyRound className="size-4 text-primary" />
-                  Passkey
-                </button>
-                <button type="button" disabled className="w-full h-11 rounded-md border border-border bg-card hover:bg-surface-100 transition-colors flex items-center justify-center gap-2.5 text-sm font-medium opacity-60 cursor-not-allowed">
-                  <ShieldCheck className="size-4 text-primary" />
-                  SSO
-                </button>
-              </div>
             </form>
 
 
