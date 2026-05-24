@@ -40,7 +40,7 @@ export function PageHeader({ title, description, actions, eyebrow, className }: 
 }
 
 export function PageContainer({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("max-w-[1400px] mx-auto", className)}>{children}</div>;
+  return <div className={cn("w-full", className)}>{children}</div>;
 }
 
 export function EmptyState({ icon: Icon, title, description, action }: { icon: React.ComponentType<{ className?: string }>; title: string; description?: string; action?: ReactNode }) {
