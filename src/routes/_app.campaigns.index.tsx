@@ -1,16 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Plus, Mail } from "lucide-react";
-import { Breadcrumbs, PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
+import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
 import { useAuth, canEdit } from "@/lib/auth";
 import { listCampaigns, type CampaignRow } from "@/lib/campaigns.functions";
-import { CampaignForm } from "@/components/campaigns/CampaignForm";
 
 export const Route = createFileRoute("/_app/campaigns/")({ component: CampaignsList });
 
@@ -25,8 +31,9 @@ const STATUS_STYLES: Record<CampaignRow["status"], string> = {
 function CampaignsList() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [createOpen, setCreateOpen] = useState(false);
-  useEffect(() => { if (user && user.account_role !== "admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => {
+    if (user && user.account_role !== "admin") navigate({ to: "/dashboard" });
+  }, [user, navigate]);
   const canMutate = canEdit(user);
 
   const listFn = useServerFn(listCampaigns);
@@ -39,41 +46,92 @@ function CampaignsList() {
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Campaigns" }]} />
-      <PageHeader title="Campaigns" description="Email campaigns sent to alumni segments." actions={canMutate && <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Create campaign</Button>} />
+      <PageHeader
+        title="Campaigns"
+        description="Email campaigns sent to alumni segments."
+        actions={
+          canMutate && (
+            <Button asChild>
+              <Link to="/campaigns/new">
+                <Plus className="size-4" />
+                Create campaign
+              </Link>
+            </Button>
+          )
+        }
+      />
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : campaigns.length === 0 ? (
-        <EmptyState icon={Mail} title="No campaigns yet" description="Create your first campaign to email a segment of alumni." action={canMutate ? <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />Create campaign</Button> : undefined} />
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {campaigns.map((c) => (
-            <Link key={c.id} to="/campaigns/$id" params={{ id: c.id }} className="block">
-              <Card className="p-5 hover:border-primary/50 transition-colors h-full">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium line-clamp-2">{c.name}</div>
-                  <Badge className={`${STATUS_STYLES[c.status]} capitalize`}>{c.status}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.subject}</p>
-                <div className="flex justify-between mt-5 text-sm">
-                  <span>{c.recipient_count} recipients</span>
-                  <span className="text-muted-foreground">{c.sent_at ? new Date(c.sent_at).toLocaleDateString() : "Draft"}</span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create campaign</DialogTitle>
-          </DialogHeader>
-          <CampaignForm mode="create" inDialog onClose={() => setCreateOpen(false)} />
-        </DialogContent>
-      </Dialog>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Subject</TableHead>
+              <TableHead>Recipients</TableHead>
+              <TableHead>Sent</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
+                  Loading campaigns…
+                </TableCell>
+              </TableRow>
+            ) : campaigns.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="py-12">
+                  <EmptyState
+                    icon={Mail}
+                    title="No campaigns yet"
+                    description="Create your first campaign to email a segment of alumni."
+                    action={
+                      canMutate ? (
+                        <Button asChild>
+                          <Link to="/campaigns/new">
+                            <Plus className="size-4" />
+                            Create campaign
+                          </Link>
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              campaigns.map((c) => (
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate({ to: "/campaigns/$id", params: { id: c.id } })}
+                >
+                  <TableCell className="font-medium">
+                    <Link
+                      to="/campaigns/$id"
+                      params={{ id: c.id }}
+                      className="hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {c.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={`${STATUS_STYLES[c.status]} capitalize`}>{c.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground max-w-xs truncate">
+                    {c.subject}
+                  </TableCell>
+                  <TableCell>{c.recipient_count}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {c.sent_at ? new Date(c.sent_at).toLocaleDateString() : "—"}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </PageContainer>
   );
 }

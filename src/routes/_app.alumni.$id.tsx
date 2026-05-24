@@ -16,16 +16,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Archive, ArchiveRestore, Trash2, ArrowLeft, Mail, Linkedin, MapPin, Briefcase } from "lucide-react";
-import { Breadcrumbs, PageContainer } from "@/components/layout/Page";
+import {
+  Pencil,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  ArrowLeft,
+  Mail,
+  Linkedin,
+  MapPin,
+  Briefcase,
+} from "lucide-react";
+import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { MENTOR_CATEGORY_LABELS } from "@/mocks";
 import { useAuth, canEdit } from "@/lib/auth";
-import {
-  getAlumni,
-  archiveAlumni,
-  unarchiveAlumni,
-  deleteAlumni,
-} from "@/lib/alumni.functions";
+import { getAlumni, archiveAlumni, unarchiveAlumni, deleteAlumni } from "@/lib/alumni.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/alumni/$id")({ component: AlumniProfile });
@@ -87,6 +92,7 @@ function AlumniProfile() {
   if (!alumni) {
     return (
       <PageContainer>
+        <PageHeader title="Alumni not found" className="mb-0" />
         <Breadcrumbs items={[{ label: "Alumni", to: "/alumni" }, { label: "Not found" }]} />
         <Card className="p-8 text-center">
           <p className="text-sm text-muted-foreground">Alumni not found.</p>
@@ -107,6 +113,11 @@ function AlumniProfile() {
 
   return (
     <PageContainer>
+      <PageHeader
+        title={alumni.full_name}
+        description={[alumni.job_title, alumni.company].filter(Boolean).join(" at ") || undefined}
+        className="mb-0"
+      />
       <Breadcrumbs items={[{ label: "Alumni", to: "/alumni" }, { label: alumni.full_name }]} />
 
       <Card className="p-6 mb-6">
@@ -116,10 +127,8 @@ function AlumniProfile() {
               {initials}
             </div>
             <div>
-              <h1 className="text-2xl font-semibold">{alumni.full_name}</h1>
-              <p className="text-muted-foreground">
-                {[alumni.job_title, alumni.company].filter(Boolean).join(" at ") || "—"}
-              </p>
+              <div className="font-medium">Profile summary</div>
+              <p className="text-muted-foreground">{alumni.email}</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {alumni.tags.map((t) => (
                   <Badge key={t} variant="secondary">
@@ -271,10 +280,7 @@ function AlumniProfile() {
                   <div className="font-medium mt-5 mb-2">Mentorship categories</div>
                   <div className="flex flex-wrap gap-1.5">
                     {alumni.mentorship_categories.map((c) => (
-                      <Badge
-                        key={c}
-                        className="bg-primary/10 text-primary border-primary/20"
-                      >
+                      <Badge key={c} className="bg-primary/10 text-primary border-primary/20">
                         {MENTOR_CATEGORY_LABELS[c] ?? c}
                       </Badge>
                     ))}
@@ -287,6 +293,19 @@ function AlumniProfile() {
 
         <TabsContent value="notes">
           <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="font-medium">Notes</div>
+              {canMutate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate({ to: "/alumni/$id/edit", params: { id } })}
+                >
+                  <Pencil className="size-4" />
+                  Edit notes
+                </Button>
+              )}
+            </div>
             <p className="text-sm whitespace-pre-wrap">
               {alumni.notes || <span className="text-muted-foreground">No notes recorded.</span>}
             </p>

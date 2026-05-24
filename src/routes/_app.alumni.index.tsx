@@ -9,10 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Search, Filter, Upload, Download, Plus, Users } from "lucide-react";
-import { Breadcrumbs, PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
+import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
 import { INDUSTRY_OPTIONS, TAG_OPTIONS } from "@/mocks";
 import { useAuth, canEdit } from "@/lib/auth";
 import { CsvImportDialog } from "@/components/alumni/CsvImportDialog";
@@ -90,7 +97,6 @@ function AlumniList() {
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Alumni" }]} />
       <PageHeader
         title="Alumni"
         description="Browse, filter, and manage alumni records."

@@ -25,9 +25,10 @@ import { Route as AppCampaignsNewRouteImport } from './routes/_app.campaigns.new
 import { Route as AppCampaignsIdRouteImport } from './routes/_app.campaigns.$id'
 import { Route as AppAlumniNewRouteImport } from './routes/_app.alumni.new'
 import { Route as AppAlumniIdRouteImport } from './routes/_app.alumni.$id'
-import { Route as AppSurveysIdEditRouteImport } from './routes/_app.surveys.$id.edit'
-import { Route as AppCampaignsIdEditRouteImport } from './routes/_app.campaigns.$id.edit'
-import { Route as AppAlumniIdEditRouteImport } from './routes/_app.alumni.$id.edit'
+import { Route as AppSurveysIdEditRouteImport } from './routes/_app.surveys.$id_.edit'
+import { Route as AppSettingsUsersNewRouteImport } from './routes/_app.settings.users_.new'
+import { Route as AppCampaignsIdEditRouteImport } from './routes/_app.campaigns.$id_.edit'
+import { Route as AppAlumniIdEditRouteImport } from './routes/_app.alumni.$id_.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -109,19 +110,24 @@ const AppAlumniIdRoute = AppAlumniIdRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppSurveysIdEditRoute = AppSurveysIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => AppSurveysIdRoute,
+  id: '/surveys/$id_/edit',
+  path: '/surveys/$id/edit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsUsersNewRoute = AppSettingsUsersNewRouteImport.update({
+  id: '/settings/users_/new',
+  path: '/settings/users/new',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppCampaignsIdEditRoute = AppCampaignsIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => AppCampaignsIdRoute,
+  id: '/campaigns/$id_/edit',
+  path: '/campaigns/$id/edit',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppAlumniIdEditRoute = AppAlumniIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => AppAlumniIdRoute,
+  id: '/alumni/$id_/edit',
+  path: '/alumni/$id/edit',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -129,19 +135,20 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/mentorship': typeof AppMentorshipRoute
-  '/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/alumni/$id': typeof AppAlumniIdRoute
   '/alumni/new': typeof AppAlumniNewRoute
-  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/$id': typeof AppCampaignsIdRoute
   '/campaigns/new': typeof AppCampaignsNewRoute
   '/settings/audit-log': typeof AppSettingsAuditLogRoute
   '/settings/users': typeof AppSettingsUsersRoute
-  '/surveys/$id': typeof AppSurveysIdRouteWithChildren
+  '/surveys/$id': typeof AppSurveysIdRoute
   '/surveys/new': typeof AppSurveysNewRoute
   '/alumni/': typeof AppAlumniIndexRoute
   '/campaigns/': typeof AppCampaignsIndexRoute
   '/surveys/': typeof AppSurveysIndexRoute
   '/alumni/$id/edit': typeof AppAlumniIdEditRoute
   '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
+  '/settings/users/new': typeof AppSettingsUsersNewRoute
   '/surveys/$id/edit': typeof AppSurveysIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -149,19 +156,20 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AppDashboardRoute
   '/mentorship': typeof AppMentorshipRoute
-  '/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/alumni/$id': typeof AppAlumniIdRoute
   '/alumni/new': typeof AppAlumniNewRoute
-  '/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/campaigns/$id': typeof AppCampaignsIdRoute
   '/campaigns/new': typeof AppCampaignsNewRoute
   '/settings/audit-log': typeof AppSettingsAuditLogRoute
   '/settings/users': typeof AppSettingsUsersRoute
-  '/surveys/$id': typeof AppSurveysIdRouteWithChildren
+  '/surveys/$id': typeof AppSurveysIdRoute
   '/surveys/new': typeof AppSurveysNewRoute
   '/alumni': typeof AppAlumniIndexRoute
   '/campaigns': typeof AppCampaignsIndexRoute
   '/surveys': typeof AppSurveysIndexRoute
   '/alumni/$id/edit': typeof AppAlumniIdEditRoute
   '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
+  '/settings/users/new': typeof AppSettingsUsersNewRoute
   '/surveys/$id/edit': typeof AppSurveysIdEditRoute
 }
 export interface FileRoutesById {
@@ -171,20 +179,21 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/mentorship': typeof AppMentorshipRoute
-  '/_app/alumni/$id': typeof AppAlumniIdRouteWithChildren
+  '/_app/alumni/$id': typeof AppAlumniIdRoute
   '/_app/alumni/new': typeof AppAlumniNewRoute
-  '/_app/campaigns/$id': typeof AppCampaignsIdRouteWithChildren
+  '/_app/campaigns/$id': typeof AppCampaignsIdRoute
   '/_app/campaigns/new': typeof AppCampaignsNewRoute
   '/_app/settings/audit-log': typeof AppSettingsAuditLogRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
-  '/_app/surveys/$id': typeof AppSurveysIdRouteWithChildren
+  '/_app/surveys/$id': typeof AppSurveysIdRoute
   '/_app/surveys/new': typeof AppSurveysNewRoute
   '/_app/alumni/': typeof AppAlumniIndexRoute
   '/_app/campaigns/': typeof AppCampaignsIndexRoute
   '/_app/surveys/': typeof AppSurveysIndexRoute
-  '/_app/alumni/$id/edit': typeof AppAlumniIdEditRoute
-  '/_app/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
-  '/_app/surveys/$id/edit': typeof AppSurveysIdEditRoute
+  '/_app/alumni/$id_/edit': typeof AppAlumniIdEditRoute
+  '/_app/campaigns/$id_/edit': typeof AppCampaignsIdEditRoute
+  '/_app/settings/users_/new': typeof AppSettingsUsersNewRoute
+  '/_app/surveys/$id_/edit': typeof AppSurveysIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/surveys/'
     | '/alumni/$id/edit'
     | '/campaigns/$id/edit'
+    | '/settings/users/new'
     | '/surveys/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/surveys'
     | '/alumni/$id/edit'
     | '/campaigns/$id/edit'
+    | '/settings/users/new'
     | '/surveys/$id/edit'
   id:
     | '__root__'
@@ -245,9 +256,10 @@ export interface FileRouteTypes {
     | '/_app/alumni/'
     | '/_app/campaigns/'
     | '/_app/surveys/'
-    | '/_app/alumni/$id/edit'
-    | '/_app/campaigns/$id/edit'
-    | '/_app/surveys/$id/edit'
+    | '/_app/alumni/$id_/edit'
+    | '/_app/campaigns/$id_/edit'
+    | '/_app/settings/users_/new'
+    | '/_app/surveys/$id_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -370,96 +382,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAlumniIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/surveys/$id/edit': {
-      id: '/_app/surveys/$id/edit'
-      path: '/edit'
+    '/_app/surveys/$id_/edit': {
+      id: '/_app/surveys/$id_/edit'
+      path: '/surveys/$id/edit'
       fullPath: '/surveys/$id/edit'
       preLoaderRoute: typeof AppSurveysIdEditRouteImport
-      parentRoute: typeof AppSurveysIdRoute
+      parentRoute: typeof AppRoute
     }
-    '/_app/campaigns/$id/edit': {
-      id: '/_app/campaigns/$id/edit'
-      path: '/edit'
+    '/_app/settings/users_/new': {
+      id: '/_app/settings/users_/new'
+      path: '/settings/users/new'
+      fullPath: '/settings/users/new'
+      preLoaderRoute: typeof AppSettingsUsersNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/campaigns/$id_/edit': {
+      id: '/_app/campaigns/$id_/edit'
+      path: '/campaigns/$id/edit'
       fullPath: '/campaigns/$id/edit'
       preLoaderRoute: typeof AppCampaignsIdEditRouteImport
-      parentRoute: typeof AppCampaignsIdRoute
+      parentRoute: typeof AppRoute
     }
-    '/_app/alumni/$id/edit': {
-      id: '/_app/alumni/$id/edit'
-      path: '/edit'
+    '/_app/alumni/$id_/edit': {
+      id: '/_app/alumni/$id_/edit'
+      path: '/alumni/$id/edit'
       fullPath: '/alumni/$id/edit'
       preLoaderRoute: typeof AppAlumniIdEditRouteImport
-      parentRoute: typeof AppAlumniIdRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface AppAlumniIdRouteChildren {
-  AppAlumniIdEditRoute: typeof AppAlumniIdEditRoute
-}
-
-const AppAlumniIdRouteChildren: AppAlumniIdRouteChildren = {
-  AppAlumniIdEditRoute: AppAlumniIdEditRoute,
-}
-
-const AppAlumniIdRouteWithChildren = AppAlumniIdRoute._addFileChildren(
-  AppAlumniIdRouteChildren,
-)
-
-interface AppCampaignsIdRouteChildren {
-  AppCampaignsIdEditRoute: typeof AppCampaignsIdEditRoute
-}
-
-const AppCampaignsIdRouteChildren: AppCampaignsIdRouteChildren = {
-  AppCampaignsIdEditRoute: AppCampaignsIdEditRoute,
-}
-
-const AppCampaignsIdRouteWithChildren = AppCampaignsIdRoute._addFileChildren(
-  AppCampaignsIdRouteChildren,
-)
-
-interface AppSurveysIdRouteChildren {
-  AppSurveysIdEditRoute: typeof AppSurveysIdEditRoute
-}
-
-const AppSurveysIdRouteChildren: AppSurveysIdRouteChildren = {
-  AppSurveysIdEditRoute: AppSurveysIdEditRoute,
-}
-
-const AppSurveysIdRouteWithChildren = AppSurveysIdRoute._addFileChildren(
-  AppSurveysIdRouteChildren,
-)
-
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppMentorshipRoute: typeof AppMentorshipRoute
-  AppAlumniIdRoute: typeof AppAlumniIdRouteWithChildren
+  AppAlumniIdRoute: typeof AppAlumniIdRoute
   AppAlumniNewRoute: typeof AppAlumniNewRoute
-  AppCampaignsIdRoute: typeof AppCampaignsIdRouteWithChildren
+  AppCampaignsIdRoute: typeof AppCampaignsIdRoute
   AppCampaignsNewRoute: typeof AppCampaignsNewRoute
   AppSettingsAuditLogRoute: typeof AppSettingsAuditLogRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
-  AppSurveysIdRoute: typeof AppSurveysIdRouteWithChildren
+  AppSurveysIdRoute: typeof AppSurveysIdRoute
   AppSurveysNewRoute: typeof AppSurveysNewRoute
   AppAlumniIndexRoute: typeof AppAlumniIndexRoute
   AppCampaignsIndexRoute: typeof AppCampaignsIndexRoute
   AppSurveysIndexRoute: typeof AppSurveysIndexRoute
+  AppAlumniIdEditRoute: typeof AppAlumniIdEditRoute
+  AppCampaignsIdEditRoute: typeof AppCampaignsIdEditRoute
+  AppSettingsUsersNewRoute: typeof AppSettingsUsersNewRoute
+  AppSurveysIdEditRoute: typeof AppSurveysIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppMentorshipRoute: AppMentorshipRoute,
-  AppAlumniIdRoute: AppAlumniIdRouteWithChildren,
+  AppAlumniIdRoute: AppAlumniIdRoute,
   AppAlumniNewRoute: AppAlumniNewRoute,
-  AppCampaignsIdRoute: AppCampaignsIdRouteWithChildren,
+  AppCampaignsIdRoute: AppCampaignsIdRoute,
   AppCampaignsNewRoute: AppCampaignsNewRoute,
   AppSettingsAuditLogRoute: AppSettingsAuditLogRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
-  AppSurveysIdRoute: AppSurveysIdRouteWithChildren,
+  AppSurveysIdRoute: AppSurveysIdRoute,
   AppSurveysNewRoute: AppSurveysNewRoute,
   AppAlumniIndexRoute: AppAlumniIndexRoute,
   AppCampaignsIndexRoute: AppCampaignsIndexRoute,
   AppSurveysIndexRoute: AppSurveysIndexRoute,
+  AppAlumniIdEditRoute: AppAlumniIdEditRoute,
+  AppCampaignsIdEditRoute: AppCampaignsIdEditRoute,
+  AppSettingsUsersNewRoute: AppSettingsUsersNewRoute,
+  AppSurveysIdEditRoute: AppSurveysIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

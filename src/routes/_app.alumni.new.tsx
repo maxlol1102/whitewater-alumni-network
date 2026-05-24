@@ -9,11 +9,13 @@ export const Route = createFileRoute("/_app/alumni/new")({ component: NewAlumni 
 function NewAlumni() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && !canEdit(user)) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => {
+    if (user && !canEdit(user)) navigate({ to: "/dashboard" });
+  }, [user, navigate]);
   return (
     <PageContainer>
+      <PageHeader title="Add Alumni" description="Create a new alumni record." className="mb-0" />
       <Breadcrumbs items={[{ label: "Alumni", to: "/alumni" }, { label: "New" }]} />
-      <PageHeader title="Add Alumni" description="Create a new alumni record." />
       <AlumniForm mode="create" />
     </PageContainer>
   );

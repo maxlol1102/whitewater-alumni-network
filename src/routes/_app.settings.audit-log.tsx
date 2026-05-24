@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Download } from "lucide-react";
-import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { listAuditLogs, type AuditLogRow } from "@/lib/audit.functions";
@@ -76,7 +76,6 @@ function AuditLogPage() {
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Settings" }, { label: "Audit Log" }]} />
       <PageHeader title="Audit Log" description="Append-only record of important activity in the system." actions={<Button variant="outline" onClick={exportCsv}><Download className="size-4" />Export CSV</Button>} />
 
       <Card className="p-4 mb-4">

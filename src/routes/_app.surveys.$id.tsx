@@ -5,10 +5,26 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ExternalLink, Pencil, Trash2 } from "lucide-react";
-import { Breadcrumbs, PageContainer } from "@/components/layout/Page";
+import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { useAuth, canEdit } from "@/lib/auth";
 import { toast } from "sonner";
 import { getSurvey, deleteSurvey, listSurveyResponses } from "@/lib/surveys.functions";
@@ -20,7 +36,9 @@ function SurveyDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  useEffect(() => { if (user && user.account_role !== "admin") navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => {
+    if (user && user.account_role !== "admin") navigate({ to: "/dashboard" });
+  }, [user, navigate]);
   const canMutate = canEdit(user);
 
   const getFn = useServerFn(getSurvey);
@@ -49,30 +67,59 @@ function SurveyDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (isLoading) return <PageContainer><p className="text-sm text-muted-foreground">Loading…</p></PageContainer>;
+  if (isLoading)
+    return (
+      <PageContainer>
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </PageContainer>
+    );
   const s = surveyData?.survey ?? null;
-  if (!s) return <PageContainer><p>Not found.</p></PageContainer>;
+  if (!s)
+    return (
+      <PageContainer>
+        <p>Not found.</p>
+      </PageContainer>
+    );
 
   const responses = responsesData?.responses ?? [];
 
   return (
     <PageContainer>
+      <PageHeader title={s.title} description={s.description} className="mb-0" />
       <Breadcrumbs items={[{ label: "Surveys", to: "/surveys" }, { label: s.title }]} />
 
       <Card className="p-6 mb-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">{s.title}</h1>
-            <p className="text-muted-foreground mt-1">{s.description}</p>
-            <a href={s.form_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-3">
+            <a
+              href={s.form_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-3"
+            >
               {s.form_url} <ExternalLink className="size-3.5" />
             </a>
-            <div className="text-sm mt-4"><span className="text-muted-foreground">Responses:</span> <span className="font-medium">{responses.length}</span></div>
+            <div className="text-sm mt-4">
+              <span className="text-muted-foreground">Responses:</span>{" "}
+              <span className="font-medium">{responses.length}</span>
+            </div>
           </div>
           {canMutate && (
             <div className="flex gap-2">
-              <Button variant="outline" asChild><Link to="/surveys/$id/edit" params={{ id }}><Pencil className="size-4" />Edit</Link></Button>
-              <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setConfirmOpen(true)}><Trash2 className="size-4" />Delete</Button>
+              <Button variant="outline" asChild>
+                <Link to="/surveys/$id/edit" params={{ id }}>
+                  <Pencil className="size-4" />
+                  Edit
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setConfirmOpen(true)}
+              >
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
             </div>
           )}
         </div>
@@ -91,14 +138,40 @@ function SurveyDetail() {
           </TableHeader>
           <TableBody>
             {responses.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">No responses imported yet.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                  No responses imported yet.
+                </TableCell>
+              </TableRow>
             ) : (
               responses.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="text-muted-foreground">{r.email}</TableCell>
-                  <TableCell>{r.alumni_id ? <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Matched</Badge> : <Badge variant="secondary">Unmatched</Badge>}</TableCell>
-                  <TableCell>{r.alumni_id && r.alumni_name ? <Link to="/alumni/$id" params={{ id: r.alumni_id }} className="text-primary hover:underline">{r.alumni_name}</Link> : "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{new Date(r.submitted_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {r.alumni_id ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                        Matched
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Unmatched</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {r.alumni_id && r.alumni_name ? (
+                      <Link
+                        to="/alumni/$id"
+                        params={{ id: r.alumni_id }}
+                        className="text-primary hover:underline"
+                      >
+                        {r.alumni_name}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(r.submitted_at).toLocaleDateString()}
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -110,11 +183,18 @@ function SurveyDetail() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this survey?</AlertDialogTitle>
-            <AlertDialogDescription>This permanently removes the survey and all imported responses. This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>
+              This permanently removes the survey and all imported responses. This action cannot be
+              undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

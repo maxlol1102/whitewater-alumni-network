@@ -5,10 +5,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Mail, Linkedin } from "lucide-react";
-import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { MENTOR_CATEGORIES, MENTOR_CATEGORY_LABELS } from "@/mocks";
 import { listAlumni } from "@/lib/alumni.functions";
 import { useAuth } from "@/lib/auth";
@@ -29,22 +36,41 @@ function MentorshipPage() {
   );
   const [category, setCategory] = useState<string>("all");
 
-  const filtered = category === "all" ? mentors : mentors.filter((m) => m.mentorship_categories.includes(category));
+  const filtered =
+    category === "all"
+      ? mentors
+      : mentors.filter((m) => m.mentorship_categories.includes(category));
 
   const counts: Record<string, number> = { all: mentors.length };
-  MENTOR_CATEGORIES.forEach((c) => { counts[c] = mentors.filter((m) => m.mentorship_categories.includes(c)).length; });
+  MENTOR_CATEGORIES.forEach((c) => {
+    counts[c] = mentors.filter((m) => m.mentorship_categories.includes(c)).length;
+  });
 
-  const chartData = MENTOR_CATEGORIES.map((c) => ({ name: MENTOR_CATEGORY_LABELS[c], count: counts[c] }));
+  const chartData = MENTOR_CATEGORIES.map((c) => ({
+    name: MENTOR_CATEGORY_LABELS[c],
+    count: counts[c],
+  }));
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Mentorship" }]} />
-      <PageHeader title="Mentorship" description="Alumni who have opted into mentoring current CS students." />
+      <PageHeader
+        title="Mentorship"
+        description="Alumni who have opted into mentoring current CS students."
+      />
 
       <div className="flex flex-wrap gap-2 mb-6">
-        <Chip label={`All (${counts.all})`} active={category === "all"} onClick={() => setCategory("all")} />
+        <Chip
+          label={`All (${counts.all})`}
+          active={category === "all"}
+          onClick={() => setCategory("all")}
+        />
         {MENTOR_CATEGORIES.map((c) => (
-          <Chip key={c} label={`${MENTOR_CATEGORY_LABELS[c]} (${counts[c]})`} active={category === c} onClick={() => setCategory(c)} />
+          <Chip
+            key={c}
+            label={`${MENTOR_CATEGORY_LABELS[c]} (${counts[c]})`}
+            active={category === c}
+            onClick={() => setCategory(c)}
+          />
         ))}
       </div>
 
@@ -68,12 +94,18 @@ function MentorshipPage() {
               </TableRow>
             ) : (
               filtered.map((m) => {
-                const initials = m.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+                const initials = m.full_name
+                  .split(" ")
+                  .map((p) => p[0])
+                  .slice(0, 2)
+                  .join("");
                 return (
                   <TableRow key={m.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="size-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold shrink-0">{initials}</div>
+                        <div className="size-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold shrink-0">
+                          {initials}
+                        </div>
                         <span className="font-medium">{m.full_name}</span>
                       </div>
                     </TableCell>
@@ -82,14 +114,28 @@ function MentorshipPage() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {m.mentorship_categories.map((c) => (
-                          <Badge key={c} className="bg-primary/10 text-primary border-primary/20">{MENTOR_CATEGORY_LABELS[c]}</Badge>
+                          <Badge key={c} className="bg-primary/10 text-primary border-primary/20">
+                            {MENTOR_CATEGORY_LABELS[c]}
+                          </Badge>
                         ))}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button asChild variant="outline" size="sm"><a href={`mailto:${m.email}`}><Mail className="size-4" />Email</a></Button>
-                        {m.linkedin_url && <Button asChild variant="outline" size="sm"><a href={m.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="size-4" />LinkedIn</a></Button>}
+                        <Button asChild variant="outline" size="sm">
+                          <a href={`mailto:${m.email}`}>
+                            <Mail className="size-4" />
+                            Email
+                          </a>
+                        </Button>
+                        {m.linkedin_url && (
+                          <Button asChild variant="outline" size="sm">
+                            <a href={m.linkedin_url} target="_blank" rel="noreferrer">
+                              <Linkedin className="size-4" />
+                              LinkedIn
+                            </a>
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -119,6 +165,11 @@ function MentorshipPage() {
 
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-accent"}`}>{label}</button>
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-accent"}`}
+    >
+      {label}
+    </button>
   );
 }

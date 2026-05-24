@@ -1,9 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell, Legend } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 import { Users, Handshake, Mail, ClipboardList, ArrowRight } from "lucide-react";
-import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { getDashboardStats } from "@/lib/dashboard.functions";
 
 export const Route = createFileRoute("/_app/dashboard")({ component: Dashboard });
@@ -18,14 +29,23 @@ function Dashboard() {
 
   const stats = [
     { label: "Total Alumni", value: data?.totalAlumni ?? 0, icon: Users, to: "/alumni" },
-    { label: "Mentorship Interested", value: data?.mentorCount ?? 0, icon: Handshake, to: "/mentorship" },
+    {
+      label: "Mentorship Interested",
+      value: data?.mentorCount ?? 0,
+      icon: Handshake,
+      to: "/mentorship",
+    },
     { label: "Campaigns Sent", value: data?.campaignsSent ?? 0, icon: Mail, to: "/campaigns" },
-    { label: "Survey Responses", value: data?.surveyResponses ?? 0, icon: ClipboardList, to: "/surveys" },
+    {
+      label: "Survey Responses",
+      value: data?.surveyResponses ?? 0,
+      icon: ClipboardList,
+      to: "/surveys",
+    },
   ];
 
   return (
     <PageContainer>
-      <Breadcrumbs items={[{ label: "Dashboard" }]} />
       <PageHeader title="Dashboard" description="An overview of alumni engagement." />
 
       {error && (
@@ -78,8 +98,16 @@ function Dashboard() {
             {data && data.byIndustry.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.byIndustry} dataKey="value" nameKey="name" outerRadius={90} innerRadius={48}>
-                    {data.byIndustry.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  <Pie
+                    data={data.byIndustry}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={90}
+                    innerRadius={48}
+                  >
+                    {data.byIndustry.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
                   </Pie>
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -95,7 +123,11 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <Card className="p-5">
           <div className="font-medium mb-4">Top 5 employers</div>
-          <BarList items={data?.topEmployers ?? []} loading={isLoading} color="var(--color-primary)" />
+          <BarList
+            items={data?.topEmployers ?? []}
+            loading={isLoading}
+            color="var(--color-primary)"
+          />
         </Card>
         <Card className="p-5">
           <div className="font-medium mb-4">Top 8 skills</div>
@@ -112,7 +144,11 @@ function Dashboard() {
             { to: "/campaigns", label: "Manage campaigns" },
             { to: "/surveys", label: "Manage surveys" },
           ].map((l) => (
-            <Link key={l.to} to={l.to} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+            <Link
+              key={l.to}
+              to={l.to}
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
               {l.label} <ArrowRight className="size-3.5" />
             </Link>
           ))}
@@ -130,7 +166,15 @@ function EmptyChart({ loading }: { loading: boolean }) {
   );
 }
 
-function BarList({ items, loading, color }: { items: { name: string; count: number }[]; loading: boolean; color: string }) {
+function BarList({
+  items,
+  loading,
+  color,
+}: {
+  items: { name: string; count: number }[];
+  loading: boolean;
+  color: string;
+}) {
   if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   if (items.length === 0) return <div className="text-sm text-muted-foreground">No data yet</div>;
   const max = items[0].count;
@@ -140,7 +184,10 @@ function BarList({ items, loading, color }: { items: { name: string; count: numb
         <li key={name} className="flex items-center gap-3">
           <div className="w-40 text-sm truncate">{name}</div>
           <div className="flex-1 h-2 bg-surface-200 rounded">
-            <div className="h-2 rounded" style={{ width: `${(count / max) * 100}%`, backgroundColor: color }} />
+            <div
+              className="h-2 rounded"
+              style={{ width: `${(count / max) * 100}%`, backgroundColor: color }}
+            />
           </div>
           <div className="text-sm tabular-nums w-8 text-right">{count}</div>
         </li>

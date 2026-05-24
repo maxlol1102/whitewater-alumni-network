@@ -159,6 +159,51 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = "FormMessage";
 
+type FormItemLayoutProps = React.HTMLAttributes<HTMLDivElement> & {
+  label: React.ReactNode;
+  description?: React.ReactNode;
+  required?: boolean;
+  layout?: "flex-row-reverse" | "horizontal" | "vertical";
+};
+
+const FormItemLayout = React.forwardRef<HTMLDivElement, FormItemLayoutProps>(
+  ({ className, label, description, required, layout = "vertical", children, ...props }, ref) => {
+    return (
+      <FormItem
+        ref={ref}
+        className={cn(
+          "gap-3 border-b border-border/70 p-5 last:border-b-0",
+          layout === "flex-row-reverse" &&
+            "grid md:grid-cols-[minmax(220px,1fr)_minmax(320px,1.35fr)] md:items-start md:gap-8",
+          layout === "horizontal" && "grid sm:grid-cols-[180px_1fr] sm:items-start sm:gap-5",
+          layout === "vertical" && "space-y-2",
+          className,
+        )}
+        {...props}
+      >
+        <div
+          className={cn(
+            "space-y-1",
+            layout === "flex-row-reverse" && "md:order-first",
+            layout === "horizontal" && "sm:pt-2",
+          )}
+        >
+          <FormLabel>
+            {label}
+            {required && <span className="ml-0.5 text-destructive">*</span>}
+          </FormLabel>
+          {description && <FormDescription>{description}</FormDescription>}
+        </div>
+        <div className="space-y-2">
+          {children}
+          <FormMessage />
+        </div>
+      </FormItem>
+    );
+  },
+);
+FormItemLayout.displayName = "FormItemLayout";
+
 export {
   useFormField,
   Form,
@@ -168,4 +213,5 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  FormItemLayout,
 };

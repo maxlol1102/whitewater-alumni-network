@@ -9,11 +9,17 @@ export const Route = createFileRoute("/_app/campaigns/new")({ component: NewCamp
 function NewCampaign() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (user && !canEdit(user)) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => {
+    if (user && !canEdit(user)) navigate({ to: "/dashboard" });
+  }, [user, navigate]);
   return (
     <PageContainer>
+      <PageHeader
+        title="Create campaign"
+        description="Compose an email and choose an alumni audience."
+        className="mb-0"
+      />
       <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />
-      <PageHeader title="Create campaign" description="Compose an email and choose an alumni audience." />
       <CampaignForm mode="create" />
     </PageContainer>
   );
