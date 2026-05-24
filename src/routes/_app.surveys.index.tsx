@@ -21,21 +21,25 @@ function SurveysList() {
       <Breadcrumbs items={[{ label: "Surveys" }]} />
       <PageHeader title="Surveys" description="External surveys and their imported responses." actions={canMutate && <Button onClick={() => navigate({ to: "/surveys/new" })}><Plus className="size-4" />Create survey</Button>} />
 
-      {MOCK_SURVEYS.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="No surveys yet" description="Create a survey to start collecting alumni responses." action={canMutate ? <Button onClick={() => navigate({ to: "/surveys/new" })}><Plus className="size-4" />Create survey</Button> : undefined} />
-      ) : (
-        <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Linked campaign</TableHead>
+              <TableHead>Responses</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {MOCK_SURVEYS.length === 0 ? (
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Linked campaign</TableHead>
-                <TableHead>Responses</TableHead>
-                <TableHead>Created</TableHead>
+                <TableCell colSpan={4} className="py-12">
+                  <EmptyState icon={ClipboardList} title="No surveys yet" description="Create a survey to start collecting alumni responses." action={canMutate ? <Button onClick={() => navigate({ to: "/surveys/new" })}><Plus className="size-4" />Create survey</Button> : undefined} />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_SURVEYS.map((s) => {
+            ) : (
+              MOCK_SURVEYS.map((s) => {
                 const linked = MOCK_CAMPAIGNS.find((c) => c.id === s.campaign_id);
                 return (
                   <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate({ to: "/surveys/$id", params: { id: s.id } })}>
@@ -45,11 +49,11 @@ function SurveysList() {
                     <TableCell className="text-muted-foreground">{new Date(s.created_at).toLocaleDateString()}</TableCell>
                   </TableRow>
                 );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+              })
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </PageContainer>
   );
 }
