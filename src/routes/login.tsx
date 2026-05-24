@@ -64,9 +64,9 @@ function LoginPage() {
 
         <div className="flex-1 grid place-items-center px-6 sm:px-12 py-12">
           <div className="w-full max-w-[400px]">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in to your account</h1>
+            <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Use the email associated with your invitation.
+              Sign in to your account
             </p>
 
             <form onSubmit={submit} className="mt-8 space-y-5">
@@ -75,6 +75,7 @@ function LoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -161,18 +162,23 @@ function LoginPage() {
       {/* Right — gradient artwork */}
       <aside className="hidden lg:block relative overflow-hidden bg-surface-100">
         <GradientArt />
-        <div className="absolute inset-0 flex items-end p-12">
-          <div className="max-w-md text-foreground/90">
-            <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-foreground/60 mb-3">
-              UW–Whitewater · Computer Science
-            </div>
-            <p className="text-2xl font-medium tracking-tight leading-snug">
-              A quiet, considered network for alumni, faculty, and students.
-            </p>
-            <p className="mt-3 text-sm text-foreground/70">
-              Invitation-only. Maintained by the Department.
-            </p>
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <figure className="max-w-lg text-foreground/90">
+            <div className="text-5xl leading-none text-foreground/30 font-serif mb-4">“</div>
+            <blockquote className="text-2xl sm:text-[26px] font-medium tracking-tight leading-snug text-foreground">
+              A quiet, considered network for alumni, faculty, and students of
+              UW–Whitewater Computer Science — invitation-only, maintained by
+              the Department.
+            </blockquote>
+            <figcaption className="mt-6 flex items-center gap-3">
+              <div className="size-9 rounded-full bg-foreground/10 grid place-items-center text-xs font-medium text-foreground/70">
+                CS
+              </div>
+              <div className="text-sm text-foreground/70">
+                Department of Computer Science
+              </div>
+            </figcaption>
+          </figure>
         </div>
       </aside>
     </div>
