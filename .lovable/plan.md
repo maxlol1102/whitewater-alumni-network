@@ -1,50 +1,25 @@
+## Plan
 
-# Next phase — Alumni on Supabase (B6.2)
+Apply both pending changes.
 
-Phase B5 (Users) is live on the database. Next vertical from the queue is **Alumni**: list, detail, create, edit, archive/delete, and CSV import. The `alumni` table and RLS already exist (admin full access, all active users can read).
+### 1. Tighten Alumni form width + attach action bar
+**`src/components/alumni/AlumniForm.tsx`**
+- Line 133: change form container `max-w-4xl` → `max-w-2xl` (~25% narrower, centered).
+- Lines 249–260: remove the `fixed bottom-0 left-60 right-0 ... border-t` floating action bar. Render an inline right-aligned Cancel / Save row directly below the last section card, inside the same `max-w-2xl` wrapper so the buttons visually attach to the card stack.
 
-## Scope
+### 2. Convert "Create campaign" to a modal
+**`src/routes/_app.campaigns.index.tsx`**
+- Add `const [createOpen, setCreateOpen] = useState(false)`.
+- Replace both `navigate({ to: "/campaigns/new" })` calls (empty-state CTA + header button) with `setCreateOpen(true)`.
+- Render `<Dialog open={createOpen} onOpenChange={setCreateOpen}>` with `DialogContent` (`max-w-2xl max-h-[85vh] overflow-y-auto`), `DialogHeader` ("Create campaign"), and `<CampaignForm mode="create" inDialog onClose={() => setCreateOpen(false)} />`.
 
-1. **Server functions** — new `src/lib/alumni.functions.ts` (thin file, server-fn declarations only) backed by `src/lib/alumni.server.ts` helpers:
-   - `listAlumni({ search, gradYear, tags, mentorshipOnly, archived })` — read for any active user
-   - `getAlumni(id)` — read
-   - `createAlumni(input)` — admin only
-   - `updateAlumni(id, input)` — admin only
-   - `archiveAlumni(id)` / `unarchiveAlumni(id)` — admin only (sets `archived` flag)
-   - `deleteAlumni(id)` — admin only (hard delete)
-   - `importAlumniCsv(rows)` — admin only, bulk upsert by email, returns `{ inserted, updated, skipped, errors[] }`
-   - All admin mutations call `assertCallerIsAdmin` (reuse from `users.server.ts`) and write an `audit_logs` row (`alumni.created`, `alumni.updated`, `alumni.archived`, `alumni.unarchived`, `alumni.deleted`, `alumni.csv_imported`).
-   - Input validation with zod (email format, grad year range, array bounds).
+**`src/components/campaigns/CampaignForm.tsx`**
+- Add props `inDialog?: boolean` and `onClose?: () => void`.
+- When `inDialog`, drop the fixed bottom footer and render an inline Cancel / Submit row at the end of the form.
+- On successful create mutation, if `onClose` is provided, call it (dialog closes) instead of `navigate({ to: "/campaigns" })`. Existing `invalidateQueries(["campaigns"])` refreshes the list.
 
-2. **Replace mocks in UI** — swap `MOCK_ALUMNI` usage for TanStack Query hooks in:
-   - `src/routes/_app.alumni.index.tsx` (list + filters)
-   - `src/routes/_app.alumni.$id.tsx` (detail)
-   - `src/routes/_app.alumni.new.tsx` (create)
-   - `src/routes/_app.alumni.$id.edit.tsx` (edit)
-   - `src/components/alumni/AlumniForm.tsx` (wire submit to mutations)
-   - `src/components/alumni/CsvImportDialog.tsx` (wire to `importAlumniCsv`, show per-row result summary)
+**`src/routes/_app.campaigns.new.tsx`** — leave as-is so `/campaigns/new` still works as a deep link.
 
-3. **Audit actions** — add the new alumni actions to the audit_logs writer (no schema change; `action` is free-form text). Audit Log page already renders generically.
-
-## Out of scope (next phases)
-
-- Dashboard analytics (B6.3)
-- Campaigns / Surveys / Audit Log viewer rewrites (B6.4–B6.6)
-- Realtime subscriptions on alumni list
-- Soft-delete column (we use `archived` for hide; `deleteAlumni` is hard delete)
-
-## Technical notes
-
-- New files only: `src/lib/alumni.functions.ts`, `src/lib/alumni.server.ts`. Keep `.functions.ts` thin (server-fn declarations + their imports only) to avoid leaking server-only imports into the client bundle.
-- All mutations followed by `queryClient.invalidateQueries({ queryKey: ['alumni'] })`.
-- CSV import: parse on the client (existing dialog uses PapaParse-style parsing), POST rows array to server fn in chunks of 500 to stay under request limits.
-- Mocks file (`src/mocks/data.ts`) stays intact for now — only the alumni routes stop reading from it.
-
-## Acceptance
-
-- Admin can create, edit, archive, unarchive, delete, and CSV-import alumni against the real DB.
-- Non-admin active users can browse the list and detail pages but see no edit affordances (already gated by `canEdit`).
-- Every admin mutation produces a matching `audit_logs` row.
-- Page loads, filters, and search hit the real DB with TanStack Query.
-
-Reply "go" and I'll execute B6.2 in build mode.
+### Out of scope
+- Converting Add Alumni or Edit Campaign to modals.
+- URL state (`?new=1`) for the campaign modal.
