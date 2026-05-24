@@ -1,16 +1,18 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MOCK_CAMPAIGNS, type Survey } from "@/mocks";
 import { toast } from "sonner";
-import { Controller } from "react-hook-form";
+import { createSurvey, updateSurvey, type SurveyRow } from "@/lib/surveys.functions";
+import { listCampaigns } from "@/lib/campaigns.functions";
 
 const schema = z.object({
   title: z.string().min(1, "Required"),
@@ -20,20 +22,64 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial?: Survey }) {
+export function SurveyForm({
+  mode,
+  initial,
+  inDialog,
+  onClose,
+}: {
+  mode: "create" | "edit";
+  initial?: SurveyRow;
+  inDialog?: boolean;
+  onClose?: () => void;
+}) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const listCampaignsFn = useServerFn(listCampaigns);
+  const { data: campaignsData } = useQuery({
+    queryKey: ["campaigns", "for-survey-picker"],
+    queryFn: () => listCampaignsFn(),
+  });
+  const campaigns = campaignsData?.campaigns ?? [];
+
   const { register, handleSubmit, control, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { title: initial?.title ?? "", form_url: initial?.form_url ?? "", description: initial?.description ?? "", campaign_id: initial?.campaign_id ?? "none" },
+    defaultValues: {
+      title: initial?.title ?? "",
+      form_url: initial?.form_url ?? "",
+      description: initial?.description ?? "",
+      campaign_id: initial?.campaign_id ?? "none",
+    },
   });
 
-  function onSubmit() {
-    toast.success(mode === "create" ? "Survey created" : "Survey updated");
-    navigate({ to: "/surveys" });
-  }
+  const createFn = useServerFn(createSurvey);
+  const updateFn = useServerFn(updateSurvey);
+
+  const mutation = useMutation({
+    mutationFn: async (values: FormData) => {
+      const payload = {
+        title: values.title,
+        form_url: values.form_url,
+        description: values.description ?? "",
+        campaign_id: values.campaign_id && values.campaign_id !== "none" ? values.campaign_id : null,
+      };
+      if (mode === "edit" && initial) {
+        return updateFn({ data: { id: initial.id, ...payload } });
+      }
+      return createFn({ data: payload });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["surveys"] });
+      toast.success(mode === "create" ? "Survey created" : "Survey updated");
+      if (onClose) onClose();
+      else navigate({ to: "/surveys" });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-24">
+    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className={inDialog ? "space-y-4" : "space-y-4 max-w-2xl mx-auto"}>
       <Card className="p-5 space-y-4">
         <div className="space-y-1.5">
           <Label>Title <span className="text-destructive">*</span></Label>
@@ -56,15 +102,17 @@ export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial
               <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
-                {MOCK_CAMPAIGNS.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {campaigns.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           )} />
         </div>
       </Card>
-      <div className="fixed bottom-0 left-60 right-0 bg-background/95 backdrop-blur border-t p-4 flex justify-end gap-2 z-20">
-        <Button type="button" variant="outline" onClick={() => navigate({ to: "/surveys" })}>Cancel</Button>
-        <Button type="submit">{mode === "create" ? "Create survey" : "Save changes"}</Button>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => (onClose ? onClose() : navigate({ to: "/surveys" }))}>Cancel</Button>
+        <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending ? "Saving…" : mode === "create" ? "Create survey" : "Save changes"}
+        </Button>
       </div>
     </form>
   );
