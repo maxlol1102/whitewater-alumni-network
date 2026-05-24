@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,12 +9,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { Mail, Linkedin } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
-import { MOCK_ALUMNI, MENTOR_CATEGORIES, MENTOR_CATEGORY_LABELS } from "@/mocks";
+import { MENTOR_CATEGORIES, MENTOR_CATEGORY_LABELS } from "@/mocks";
+import { listAlumni } from "@/lib/alumni.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/mentorship")({ component: MentorshipPage });
 
 function MentorshipPage() {
-  const mentors = useMemo(() => MOCK_ALUMNI.filter((a) => !a.archived && a.mentorship_interest), []);
+  const { user } = useAuth();
+  const listFn = useServerFn(listAlumni);
+  const { data } = useQuery({
+    queryKey: ["alumni", "for-mentorship"],
+    queryFn: () => listFn({ data: {} }),
+    enabled: !!user,
+  });
+  const mentors = useMemo(
+    () => (data?.alumni ?? []).filter((a) => !a.archived && a.mentorship_interest),
+    [data],
+  );
   const [category, setCategory] = useState<string>("all");
 
   const filtered = category === "all" ? mentors : mentors.filter((m) => m.mentorship_categories.includes(category));
