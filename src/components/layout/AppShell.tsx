@@ -4,11 +4,12 @@ import { Sidebar } from "./Sidebar";
 import { useAuth, canAccess, isActive } from "@/lib/auth";
 
 export function AppShell() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
+    if (loading) return;
     if (!user || !isActive(user)) {
       navigate({ to: "/login" });
       return;
@@ -16,9 +17,9 @@ export function AppShell() {
     if (!canAccess(user, path)) {
       navigate({ to: "/dashboard" });
     }
-  }, [user, path, navigate]);
+  }, [user, loading, path, navigate]);
 
-  if (!user) return null;
+  if (loading || !user) return null;
 
   return (
     <div className="min-h-screen bg-background">
