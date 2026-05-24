@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GraduationCap, KeyRound, ShieldCheck } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { useAuth, isActive } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
