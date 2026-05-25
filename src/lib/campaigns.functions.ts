@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertCallerIsAdmin } from "./users.server";
 import { writeAudit } from "./alumni.server";
-import { sendBulkEmail, sendPersonalizedBatch } from "./email.server";
+import { sendPersonalizedBatch } from "./email.server";
 
 export type CampaignRow = {
   id: string;
@@ -70,8 +70,8 @@ async function countRecipients(filters: z.infer<typeof FiltersSchema>): Promise<
 
 async function getRecipients(
   filters: z.infer<typeof FiltersSchema>,
-): Promise<{ id: string; email: string; name: string }[]> {
-  let q = supabaseAdmin.from("alumni").select("id, email, full_name").eq("archived", false);
+): Promise<{ id: string; email: string; name: string; graduation_year: number | null }[]> {
+  let q = supabaseAdmin.from("alumni").select("id, email, full_name, graduation_year").eq("archived", false);
   if (filters.filter_mentorship_only) q = q.eq("mentorship_interest", true);
   if (filters.filter_tags.length) q = q.overlaps("tags", filters.filter_tags);
   if (filters.filter_grad_years.length) q = q.in("graduation_year", filters.filter_grad_years);
@@ -81,7 +81,23 @@ async function getRecipients(
     id: r.id as string,
     email: r.email as string,
     name: (r.full_name as string) ?? "",
+    graduation_year: (r.graduation_year as number | null) ?? null,
   }));
+}
+
+function personalizeBody(
+  html: string,
+  recipient: { name: string; graduation_year: number | null },
+  surveyLink?: string,
+): string {
+  const firstName = recipient.name.split(" ")[0] || recipient.name;
+  let out = html
+    .replaceAll("{{first_name}}", firstName)
+    .replaceAll("{{graduation_year}}", recipient.graduation_year ? String(recipient.graduation_year) : "");
+  if (surveyLink !== undefined) {
+    out = out.replaceAll("{{survey_link}}", surveyLink);
+  }
+  return out;
 }
 
 function getAppOrigin(): string {
@@ -278,11 +294,12 @@ export const sendCampaign = createServerFn({ method: "POST" })
         filter_grad_years: before.filter_grad_years ?? [],
       });
 
-      const emailResult = await sendBulkEmail({
-        recipients,
+      const emailBatch = recipients.map((r) => ({
+        to: r.email,
         subject: before.subject,
-        html: before.body,
-      });
+        html: personalizeBody(before.body, r),
+      }));
+      const emailResult = await sendPersonalizedBatch(emailBatch);
 
       const sent_at = new Date().toISOString();
       const { data: updated, error } = await supabaseAdmin
@@ -357,19 +374,20 @@ async function sendSurveyCampaign({
     email: r.email,
     name: r.name,
     token: crypto.randomUUID(),
+    graduation_year: r.graduation_year,
   }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: insertErr } = await (supabaseAdmin as any)
     .from("survey_recipients")
-    .insert(recipientRows);
+    .insert(recipientRows.map(({ graduation_year: _gy, ...rest }) => rest));
   if (insertErr) throw new Error(insertErr.message);
 
   // Build personalized emails with unique survey links
   const origin = getAppOrigin();
   const emailBatch = recipientRows.map((r) => {
     const surveyLink = `${origin}/survey/respond/${r.token}`;
-    const html = before.body.replaceAll("{{survey_link}}", surveyLink);
+    const html = personalizeBody(before.body, { name: r.name, graduation_year: r.graduation_year }, surveyLink);
     return { to: r.email, subject: before.subject, html };
   });
 

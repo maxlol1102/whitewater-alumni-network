@@ -1,4 +1,4 @@
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useMemo, useState } from "react";
@@ -13,13 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { TAG_OPTIONS } from "@/mocks";
 import { toast } from "sonner";
 import {
@@ -29,6 +23,7 @@ import {
   type CampaignRow,
 } from "@/lib/campaigns.functions";
 import { listAlumni } from "@/lib/alumni.functions";
+import { type EmailTemplate, AUTO_PLACEHOLDERS } from "@/lib/email-templates";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -40,17 +35,62 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
+// ---------------------------------------------------------------------------
+// Placeholder hint bar
+// ---------------------------------------------------------------------------
+
+function PlaceholderHints({ template }: { template?: EmailTemplate }) {
+  const manual = template?.placeholders.filter((p) => p.mode === "manual") ?? [];
+  const auto = template
+    ? template.placeholders.filter((p) => p.mode === "auto").map((p) => p.key)
+    : AUTO_PLACEHOLDERS;
+
+  if (auto.length === 0 && manual.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/30 px-4 py-3 space-y-2 text-xs">
+      {auto.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted-foreground shrink-0">Auto-replaced on send:</span>
+          {auto.map((key) => (
+            <code key={key} className="bg-primary/8 text-primary px-1.5 py-0.5 rounded font-mono text-[11px]">
+              {key}
+            </code>
+          ))}
+        </div>
+      )}
+      {manual.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted-foreground shrink-0">Fill in before saving:</span>
+          {manual.map((p) => (
+            <code key={p.key} className="bg-amber-50 text-amber-700 border border-amber-200/60 px-1.5 py-0.5 rounded font-mono text-[11px]">
+              {p.key}
+            </code>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main form
+// ---------------------------------------------------------------------------
+
 export function CampaignForm({
   mode,
   initial,
+  templateOverride,
 }: {
   mode: "create" | "edit";
   initial?: CampaignRow;
+  templateOverride?: EmailTemplate;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
   const [campaignType, setCampaignType] = useState<"email" | "survey">(
-    initial?.type ?? "email",
+    templateOverride?.campaignType ?? initial?.type ?? "email",
   );
   const [mentorOnly, setMentorOnly] = useState(initial?.filter_mentorship_only ?? false);
   const [tags, setTags] = useState<string[]>(initial?.filter_tags ?? []);
@@ -75,34 +115,39 @@ export function CampaignForm({
     previewFn({
       data: { filter_mentorship_only: mentorOnly, filter_tags: tags, filter_grad_years: years },
     })
-      .then((r) => {
-        if (!cancelled) setMatched(r.count);
-      })
+      .then((r) => { if (!cancelled) setMatched(r.count); })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [mentorOnly, tags, years, previewFn]);
 
   const {
     register,
     handleSubmit,
-    control,
+    setValue,
     setError,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: initial?.name ?? "",
-      subject: initial?.subject ?? "",
-      body: initial?.body ?? "",
+      subject: templateOverride?.subject ?? initial?.subject ?? "",
+      body: templateOverride?.body ?? initial?.body ?? "",
       tally_form_id: initial?.tally_form_id ?? "",
       tally_form_url: initial?.tally_form_url ?? "",
     },
   });
 
+  // Sync template override if it changes (e.g. navigating between templates)
+  useEffect(() => {
+    if (!templateOverride) return;
+    setValue("subject", templateOverride.subject);
+    setValue("body", templateOverride.body);
+    setCampaignType(templateOverride.campaignType);
+  }, [templateOverride, setValue]);
+
   const createFn = useServerFn(createCampaign);
   const updateFn = useServerFn(updateCampaign);
+
   const mutation = useMutation({
     mutationFn: async (values: FormData) => {
       if (campaignType === "survey") {
@@ -146,7 +191,18 @@ export function CampaignForm({
       <form onSubmit={handleSubmit((v) => mutation.mutate(v))}>
         <Card>
           <CardHeader className="border-b border-border/70">
-            <CardTitle>Campaign draft</CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle>Campaign draft</CardTitle>
+              {templateOverride && (
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/campaigns/new" })}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Change template
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
             <div className="space-y-4">
@@ -174,44 +230,35 @@ export function CampaignForm({
               </div>
 
               <div className="space-y-1.5">
-                <Label>
-                  Name <span className="text-destructive">*</span>
-                </Label>
+                <Label>Name <span className="text-destructive">*</span></Label>
                 <Input {...register("name")} />
                 {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label>
-                  Subject <span className="text-destructive">*</span>
-                </Label>
+                <Label>Subject <span className="text-destructive">*</span></Label>
                 <Input {...register("subject")} />
-                {errors.subject && (
-                  <p className="text-xs text-destructive">{errors.subject.message}</p>
-                )}
+                {errors.subject && <p className="text-xs text-destructive">{errors.subject.message}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label>
-                  Email body <span className="text-destructive">*</span>
-                </Label>
+                <Label>Email body <span className="text-destructive">*</span></Label>
                 {campaignType === "survey" && (
                   <p className="text-xs text-muted-foreground">
-                    Use <code className="bg-muted px-1 py-0.5 rounded text-xs">{"{{survey_link}}"}</code> where you want each recipient's unique survey link to appear.
+                    Use <code className="bg-muted px-1 py-0.5 rounded text-[11px] font-mono">{"{{survey_link}}"}</code> where you want each recipient's unique survey link to appear.
                   </p>
                 )}
-                <Textarea rows={14} className="font-mono text-xs" {...register("body")} />
+                <Textarea rows={16} className="font-mono text-xs" {...register("body")} />
                 {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
+                <PlaceholderHints template={templateOverride} />
               </div>
 
-              {/* Survey-only fields */}
+              {/* Survey-only Tally fields */}
               {campaignType === "survey" && (
                 <div className="rounded-lg border border-border/70 bg-muted/20 p-4 space-y-4">
                   <div className="text-sm font-medium">Tally form</div>
                   <div className="space-y-1.5">
-                    <Label>
-                      Tally form ID <span className="text-destructive">*</span>
-                    </Label>
+                    <Label>Tally form ID <span className="text-destructive">*</span></Label>
                     <Input placeholder="e.g. wkAlB0" {...register("tally_form_id")} />
                     <p className="text-xs text-muted-foreground">
                       Found in your Tally URL: tally.so/r/<strong>wkAlB0</strong>
@@ -221,15 +268,10 @@ export function CampaignForm({
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label>
-                      Tally form URL <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      placeholder="https://tally.so/r/wkAlB0"
-                      {...register("tally_form_url")}
-                    />
+                    <Label>Tally form URL <span className="text-destructive">*</span></Label>
+                    <Input placeholder="https://tally.so/r/wkAlB0" {...register("tally_form_url")} />
                     <p className="text-xs text-muted-foreground">
-                      The full URL to your Tally form. Alumni will see it embedded in a branded page.
+                      Alumni see this form embedded in a branded page.
                     </p>
                     {errors.tally_form_url && (
                       <p className="text-xs text-destructive">{errors.tally_form_url.message}</p>
@@ -239,6 +281,7 @@ export function CampaignForm({
               )}
             </div>
 
+            {/* Sidebar */}
             <div className="space-y-4">
               <Card className="bg-muted/20 p-5 shadow-none">
                 <div className="font-medium">Audience filters</div>
@@ -248,9 +291,7 @@ export function CampaignForm({
                     <Switch checked={mentorOnly} onCheckedChange={setMentorOnly} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Tags
-                    </Label>
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Tags</Label>
                     <div className="space-y-1">
                       {TAG_OPTIONS.map((t) => (
                         <label key={t} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -266,9 +307,7 @@ export function CampaignForm({
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Graduation years
-                    </Label>
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Graduation years</Label>
                     <div className="max-h-40 space-y-1 overflow-auto pr-1">
                       {allYears.length === 0 && (
                         <p className="text-xs text-muted-foreground">No graduation years yet.</p>
@@ -288,6 +327,7 @@ export function CampaignForm({
                   </div>
                 </div>
               </Card>
+
               <Card className="bg-accent p-5 shadow-none">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
                   Recipients matching filters
@@ -299,6 +339,7 @@ export function CampaignForm({
               </Card>
             </div>
           </CardContent>
+
           <CardFooter className="justify-end gap-2 border-t border-border/70 pt-6">
             <Button type="button" variant="outline" onClick={() => navigate({ to: "/campaigns" })}>
               Cancel
