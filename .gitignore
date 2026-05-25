@@ -27,6 +27,12 @@ dist-ssr
 # Claude memory
 .claude/
 
+# Agent skills (reinstallable via: npx skills add)
+.agents/
+
+# Lovable project metadata (no longer used)
+.lovable/
+
 # Supabase temp
 supabase/.temp/
 
