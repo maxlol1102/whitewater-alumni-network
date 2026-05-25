@@ -1,6 +1,19 @@
 # UWW CS Alumni CRM
 
-Internal CRM for the University of Wisconsin Whitewater Computer Science department. Admins manage alumni records, send email campaigns, distribute surveys, and coordinate mentorship. Faculty and student users can view alumni data and create survey campaigns.
+Internal alumni management platform for the University of Wisconsin-Whitewater Computer Science Department. Not a public alumni portal — a private admin tool for department staff.
+
+## Business Goals
+
+The CS department has no structured way to stay connected with graduates. This platform solves that by giving the department:
+
+- **A single alumni record system** — track where graduates work, their skills, and their willingness to mentor, instead of scattered spreadsheets
+- **Targeted outreach** — send personalized email campaigns to filtered segments of alumni (by graduation year, industry, tags, or mentorship interest)
+- **Survey distribution and tracking** — collect structured feedback from alumni and match responses back to individual records
+- **Mentorship coordination** — maintain a directory of alumni open to mentoring students, filterable by category, so faculty can connect the right people
+- **Role-based access** — admins manage data and run campaigns; faculty can read alumni and mentorship info; a super admin manages users and sees the full audit trail
+- **Accountability** — every important action is logged in an append-only audit log so the department knows who changed what and when
+
+This is a desktop-first internal tool. No public pages, no alumni self-service, no student portal.
 
 ## Stack
 
