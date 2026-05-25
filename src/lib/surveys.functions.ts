@@ -10,6 +10,7 @@ export type SurveyRow = {
   title: string;
   description: string;
   form_url: string;
+  tally_form_id: string | null;
   campaign_id: string | null;
   response_count: number;
   created_at: string;
@@ -30,6 +31,7 @@ export type SurveyResponseRow = {
 const SurveyInputSchema = z.object({
   title: z.string().min(1).max(200),
   form_url: z.string().url().max(1000),
+  tally_form_id: z.string().max(100).nullable().optional(),
   description: z.string().max(2000).optional().default(""),
   campaign_id: z.string().uuid().nullable().optional(),
 });
@@ -73,14 +75,17 @@ export const createSurvey = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
     await assertCallerIsAdmin(supabase, userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const insertPayload: any = {
+      title: data.title,
+      form_url: data.form_url,
+      tally_form_id: data.tally_form_id ?? null,
+      description: data.description ?? "",
+      campaign_id: data.campaign_id ?? null,
+    };
     const { data: created, error } = await supabaseAdmin
       .from("surveys")
-      .insert({
-        title: data.title,
-        form_url: data.form_url,
-        description: data.description ?? "",
-        campaign_id: data.campaign_id ?? null,
-      })
+      .insert(insertPayload)
       .select("*")
       .single();
     if (error) throw new Error(error.message);
@@ -106,14 +111,17 @@ export const updateSurvey = createServerFn({ method: "POST" })
     const { supabase, userId, claims } = context;
     await assertCallerIsAdmin(supabase, userId);
     const { data: before } = await supabaseAdmin.from("surveys").select("*").eq("id", data.id).maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatePayload: any = {
+      title: data.title,
+      form_url: data.form_url,
+      tally_form_id: data.tally_form_id ?? null,
+      description: data.description ?? "",
+      campaign_id: data.campaign_id ?? null,
+    };
     const { data: updated, error } = await supabaseAdmin
       .from("surveys")
-      .update({
-        title: data.title,
-        form_url: data.form_url,
-        description: data.description ?? "",
-        campaign_id: data.campaign_id ?? null,
-      })
+      .update(updatePayload)
       .eq("id", data.id)
       .select("*")
       .single();

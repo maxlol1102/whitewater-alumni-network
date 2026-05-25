@@ -24,6 +24,7 @@ import { listCampaigns } from "@/lib/campaigns.functions";
 const schema = z.object({
   title: z.string().min(1, "Required"),
   form_url: z.string().url("Must be a valid URL"),
+  tally_form_id: z.string().optional().or(z.literal("")),
   description: z.string().optional().or(z.literal("")),
   campaign_id: z.string().optional(),
 });
@@ -50,6 +51,7 @@ export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial
     defaultValues: {
       title: initial?.title ?? "",
       form_url: initial?.form_url ?? "",
+      tally_form_id: initial?.tally_form_id ?? "",
       description: initial?.description ?? "",
       campaign_id: initial?.campaign_id ?? "none",
     },
@@ -63,6 +65,7 @@ export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial
       const payload = {
         title: values.title,
         form_url: values.form_url,
+        tally_form_id: values.tally_form_id || null,
         description: values.description ?? "",
         campaign_id:
           values.campaign_id && values.campaign_id !== "none" ? values.campaign_id : null,
@@ -99,10 +102,17 @@ export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial
               <Label>
                 Form URL <span className="text-destructive">*</span>
               </Label>
-              <Input placeholder="https://forms.gle/..." {...register("form_url")} />
+              <Input placeholder="https://tally.so/r/... or https://forms.gle/..." {...register("form_url")} />
               {errors.form_url && (
                 <p className="text-xs text-destructive">{errors.form_url.message}</p>
               )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tally form ID</Label>
+              <Input placeholder="e.g. wkAlB0" {...register("tally_form_id")} />
+              <p className="text-xs text-muted-foreground">
+                Optional. Find this in your Tally form URL: tally.so/r/<strong>wkAlB0</strong>. Used to automatically receive responses via webhook.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Description</Label>

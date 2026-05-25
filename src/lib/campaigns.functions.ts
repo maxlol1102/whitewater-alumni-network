@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertCallerIsAdmin } from "./users.server";
 import { writeAudit } from "./alumni.server";
+import { sendBulkEmail } from "./email.server";
 
 export type CampaignRow = {
   id: string;
@@ -43,6 +44,18 @@ async function countRecipients(filters: z.infer<typeof FiltersSchema>): Promise<
   const { count, error } = await q;
   if (error) throw new Error(error.message);
   return count ?? 0;
+}
+
+async function getRecipientEmails(
+  filters: z.infer<typeof FiltersSchema>,
+): Promise<{ email: string; name: string }[]> {
+  let q = supabaseAdmin.from("alumni").select("email, full_name").eq("archived", false);
+  if (filters.filter_mentorship_only) q = q.eq("mentorship_interest", true);
+  if (filters.filter_tags.length) q = q.overlaps("tags", filters.filter_tags);
+  if (filters.filter_grad_years.length) q = q.in("graduation_year", filters.filter_grad_years);
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({ email: r.email as string, name: (r.full_name as string) ?? "" }));
 }
 
 export const listCampaigns = createServerFn({ method: "GET" })
@@ -181,29 +194,60 @@ export const sendCampaign = createServerFn({ method: "POST" })
     const { data: before } = await supabaseAdmin.from("campaigns").select("*").eq("id", data.id).maybeSingle();
     if (!before) throw new Error("Not found");
     if (before.status !== "draft") throw new Error("Only draft campaigns can be sent");
-    const recipient_count = await countRecipients({
-      filter_mentorship_only: before.filter_mentorship_only,
-      filter_tags: before.filter_tags ?? [],
-      filter_grad_years: before.filter_grad_years ?? [],
-    });
-    const sent_at = new Date().toISOString();
-    const { data: updated, error } = await supabaseAdmin
-      .from("campaigns")
-      .update({ status: "sent", sent_at, recipient_count })
-      .eq("id", data.id)
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-    await writeAudit({
-      actor_id: userId,
-      actor_email: (claims as { email?: string })?.email ?? null,
-      action: "campaign.sent",
-      entity_type: "campaign",
-      entity_id: updated.id,
-      entity_label: updated.name,
-      summary: `Sent campaign ${updated.name} to ${recipient_count} recipients`,
-      before,
-      after: updated,
-    });
-    return { campaign: updated as CampaignRow };
+
+    // Mark as sending immediately so UI reflects progress
+    await supabaseAdmin.from("campaigns").update({ status: "sending" }).eq("id", data.id);
+
+    try {
+      const recipients = await getRecipientEmails({
+        filter_mentorship_only: before.filter_mentorship_only,
+        filter_tags: before.filter_tags ?? [],
+        filter_grad_years: before.filter_grad_years ?? [],
+      });
+
+      await sendBulkEmail({ recipients, subject: before.subject, html: before.body });
+
+      const sent_at = new Date().toISOString();
+      const { data: updated, error } = await supabaseAdmin
+        .from("campaigns")
+        .update({ status: "sent", sent_at, recipient_count: recipients.length })
+        .eq("id", data.id)
+        .select("*")
+        .single();
+      if (error) throw new Error(error.message);
+
+      await writeAudit({
+        actor_id: userId,
+        actor_email: (claims as { email?: string })?.email ?? null,
+        action: "campaign.sent",
+        entity_type: "campaign",
+        entity_id: updated.id,
+        entity_label: updated.name,
+        summary: `Sent campaign ${updated.name} to ${recipients.length} recipients`,
+        before,
+        after: updated,
+      });
+      return { campaign: updated as CampaignRow };
+    } catch (err) {
+      // Roll status back to failed so the admin can see what happened
+      const { data: failed } = await supabaseAdmin
+        .from("campaigns")
+        .update({ status: "failed" })
+        .eq("id", data.id)
+        .select("*")
+        .single();
+      await writeAudit({
+        actor_id: userId,
+        actor_email: (claims as { email?: string })?.email ?? null,
+        action: "campaign.failed",
+        entity_type: "campaign",
+        entity_id: data.id,
+        entity_label: before.name,
+        summary: `Campaign ${before.name} failed to send: ${(err as Error).message}`,
+        before,
+        after: failed,
+        severity: "critical",
+      });
+      throw err;
+    }
   });

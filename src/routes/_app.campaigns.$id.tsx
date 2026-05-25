@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Send, Pencil, Trash2 } from "lucide-react";
+import { Send, Pencil, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
@@ -61,10 +61,12 @@ function CampaignDetail() {
   const sendM = useMutation({
     mutationFn: () => sendFn({ data: { id } }),
     onSuccess: (r) => {
-      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       toast.success(`Sent to ${r.campaign.recipient_count} recipients`);
     },
     onError: (e: Error) => toast.error(e.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+    },
   });
   const delM = useMutation({
     mutationFn: () => delFn({ data: { id } }),
@@ -98,6 +100,19 @@ function CampaignDetail() {
     <PageContainer>
       <PageHeader title={campaign.name} description={campaign.subject} className="mb-0" />
       <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: campaign.name }]} />
+
+      {campaign.status === "failed" && (
+        <div className="flex items-center gap-2 mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <AlertTriangle className="size-4 shrink-0" />
+          Campaign failed to send. Check the audit log for the error details.
+        </div>
+      )}
+      {campaign.status === "sending" && (
+        <div className="flex items-center gap-2 mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <Loader2 className="size-4 shrink-0 animate-spin" />
+          Sending in progress…
+        </div>
+      )}
 
       <Card className="p-6 mb-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
