@@ -29,6 +29,7 @@ npx supabase gen types typescript --project-id lahnnjgugabyqtnkhtgd \
 ## How To Run Locally
 ```bash
 bun install
+npx skills add          # reinstalls AI agent skills from skills-lock.json
 # create .env with the vars above
 bun run dev
 ```
