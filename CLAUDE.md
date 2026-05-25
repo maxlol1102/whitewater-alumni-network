@@ -110,14 +110,44 @@ When using `<Button asChild>`, the Button renders via Radix `Slot` which require
 
 The `loading` prop on `Button` is ignored when `asChild=true` (Slot cannot host a spinner alongside the child).
 
+## Copy Style
+
+- **No em-dashes** in PageHeader descriptions or any UI prose copy. Use a period or comma instead.
+- Em-dashes in table cell null-value placeholders (`{value ?? "—"}`) are fine — those are data display conventions, not prose.
+- Write descriptions as a product designer would: specific, active, benefit-first.
+
+## User Roles and Permissions
+
+Two roles: `admin` and `user`. Check `src/lib/auth.tsx` for helpers.
+
+| Helper | When true |
+|--------|-----------|
+| `isActive(user)` | user.status === "active" |
+| `canEdit(user)` | isActive AND account_role === "admin" |
+
+**Route guards:**
+- Admin-only pages: `if (user && !canEdit(user)) navigate({ to: "/dashboard" })`
+- Active-user pages: `if (user && !isActive(user)) navigate({ to: "/dashboard" })`
+
+**Query `enabled` conditions:**
+- Admin-only data: `enabled: canEdit(user)`
+- All-user data: `enabled: isActive(user)`
+
+**Feature access summary:**
+- Alumni, Mentorship, Campaigns list/detail, Surveys list/detail: all active users
+- Alumni CRUD, Email campaigns, Surveys CRUD, User management, Audit log: admin only
+- Survey campaign creation: all active users
+- See `docs/PERMISSIONS.md` for the complete matrix.
+
 ## Server Functions (Supabase)
 
 All data mutations go through `createServerFn` in `src/lib/*.functions.ts`.
 
-- Always call `assertCallerIsAdmin` for admin-only operations.
 - Use `requireSupabaseAuth` middleware on every server function.
-- After a successful mutation, write an audit entry with `writeAudit`.
+- Call `assertCallerIsAdmin` for admin-only operations. Some operations (e.g. survey campaign creation, reading alumni) are accessible to all active users — omit the admin check for those.
+- After every successful admin mutation, write an audit entry with `writeAudit`.
 - Validate inputs with Zod schemas at the top of the file.
+- For tables not yet in the generated Supabase types, cast: `(supabaseAdmin as any).from("table_name")`.
 
 ## Help Content (HelpBlock)
 
