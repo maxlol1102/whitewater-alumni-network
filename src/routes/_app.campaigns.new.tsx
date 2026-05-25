@@ -22,44 +22,34 @@ function NewCampaign() {
     if (user && !isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
 
-  // Non-admins go straight to the blank survey campaign form (no template picker).
-  if (!isAdmin) {
-    return (
-      <PageContainer>
-        <PageHeader
-          title="New survey campaign"
-          description="Pick a survey, set your audience filters, and draft the email your recipients will receive."
-          className="mb-0"
-        />
-        <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />
-        <CampaignForm mode="create" />
-      </PageContainer>
-    );
-  }
-
-  // Admins: No ?template param → show picker
+  // No template selected yet → show picker
   if (!templateId) {
     return (
       <PageContainer>
         <PageHeader
           title="New campaign"
-          description="Every template includes UWW branding and auto-fills recipient details. Pick one and your copy is half-written."
+          description="Campaign templates pre-fill everything — name, subject, email, and survey. Pick a layout to start from a formatted email body."
           className="mb-0"
         />
         <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />
-        <TemplatePicker />
+        {/* surveyOnly hides email layouts for non-admins who can't send email campaigns */}
+        <TemplatePicker surveyOnly={!isAdmin} />
       </PageContainer>
     );
   }
 
-  // ?template=blank → skeleton form; unknown id → also blank skeleton
-  const template = templateId === "blank" ? BLANK_TEMPLATE : (getTemplate(templateId) ?? BLANK_TEMPLATE);
+  const template =
+    templateId === "blank" ? BLANK_TEMPLATE : (getTemplate(templateId) ?? BLANK_TEMPLATE);
 
   return (
     <PageContainer>
       <PageHeader
         title={template ? `${template.name} campaign` : "New campaign"}
-        description="Replace the bracketed content with your own. Save as draft, then review and send when you're ready."
+        description={
+          template?.category === "bundle"
+            ? "Campaign details are pre-filled from the template. Edit anything before saving."
+            : "Replace the bracketed content with your own. Save as draft, then review and send when you're ready."
+        }
         className="mb-0"
       />
       <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />

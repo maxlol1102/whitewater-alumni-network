@@ -1,17 +1,41 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Mail, Newspaper, CalendarDays, ClipboardList, Plus, LayoutGrid, List } from "lucide-react";
+import {
+  UserCircle,
+  Users,
+  UserPlus,
+  GraduationCap,
+  Star,
+  Mail,
+  Briefcase,
+  Newspaper,
+  CalendarDays,
+  Mic,
+  HandHeart,
+  Plus,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EMAIL_TEMPLATES, type EmailTemplate } from "@/lib/email-templates";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, React.ElementType> = {
-  "mentorship-invite": Mail,
-  "newsletter": Newspaper,
-  "event-invite": CalendarDays,
-  "survey-request": ClipboardList,
+  // bundles
+  "alumni-profile": UserCircle,
+  "mentorship-interest": Users,
+  "hiring-interest": UserPlus,
+  // layouts
+  newsletter: Newspaper,
+  "networking-event": CalendarDays,
 };
+
+function fieldHint(fields: string[]): string {
+  const preview = fields.slice(0, 3).join(", ");
+  const extra = fields.length > 3 ? ` +${fields.length - 3} more` : "";
+  return `Collects ${fields.length} fields: ${preview}${extra}`;
+}
 
 // ---------------------------------------------------------------------------
 // Card view
@@ -38,12 +62,21 @@ function TemplateCard({ template, onClick }: { template: EmailTemplate; onClick:
           {template.campaignType}
         </Badge>
       </div>
-      <div>
+      <div className="flex-1">
         <div className="font-semibold text-sm text-foreground">{template.name}</div>
-        <div className="mt-1 text-xs text-muted-foreground leading-relaxed">{template.description}</div>
+        <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
+          {template.description}
+        </div>
       </div>
-      <div className="mt-auto pt-1 text-xs text-muted-foreground/70 truncate">
-        {template.subject}
+      <div className="mt-auto space-y-1">
+        {template.surveyFields && template.surveyFields.length > 0 && (
+          <div className="text-[11px] text-primary/70 font-medium truncate">
+            {fieldHint(template.surveyFields)}
+          </div>
+        )}
+        {!template.surveyFields && (
+          <div className="text-xs text-muted-foreground/60 truncate">{template.subject}</div>
+        )}
       </div>
     </button>
   );
@@ -72,14 +105,37 @@ function TemplateRow({ template, onClick }: { template: EmailTemplate; onClick: 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm text-foreground">{template.name}</span>
-          <Badge variant="outline" className="capitalize text-xs">{template.campaignType}</Badge>
+          <Badge variant="outline" className="capitalize text-xs">
+            {template.campaignType}
+          </Badge>
         </div>
         <div className="mt-0.5 text-xs text-muted-foreground truncate">{template.description}</div>
+        {template.surveyFields && template.surveyFields.length > 0 && (
+          <div className="mt-0.5 text-[11px] text-primary/70 font-medium truncate">
+            {fieldHint(template.surveyFields)}
+          </div>
+        )}
       </div>
-      <div className="shrink-0 text-xs text-muted-foreground/60 hidden sm:block max-w-[260px] truncate">
-        {template.subject}
-      </div>
+      {!template.surveyFields && (
+        <div className="shrink-0 text-xs text-muted-foreground/60 hidden sm:block max-w-[260px] truncate">
+          {template.subject}
+        </div>
+      )}
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section header
+// ---------------------------------------------------------------------------
+
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <div className="mb-3">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
+    </div>
   );
 }
 
@@ -89,22 +145,49 @@ function TemplateRow({ template, onClick }: { template: EmailTemplate; onClick: 
 
 type View = "grid" | "list";
 
-export function TemplatePicker() {
+export function TemplatePicker({ surveyOnly = false }: { surveyOnly?: boolean }) {
   const navigate = useNavigate();
   const [view, setView] = useState<View>("grid");
 
   const go = (id: string) => navigate({ to: "/campaigns/new", search: { template: id } });
 
+  const bundles = EMAIL_TEMPLATES.filter((t) => t.category === "bundle");
+  const layouts = EMAIL_TEMPLATES.filter(
+    (t) => t.category === "layout" && (!surveyOnly || t.campaignType === "survey"),
+  );
+
+  function renderGrid(templates: EmailTemplate[], cols: "3" | "4" = "3") {
+    return (
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-3 sm:grid-cols-2",
+          cols === "3" ? "lg:grid-cols-3" : "lg:grid-cols-3",
+        )}
+      >
+        {templates.map((t) => (
+          <TemplateCard key={t.id} template={t} onClick={() => go(t.id)} />
+        ))}
+      </div>
+    );
+  }
+
+  function renderList(templates: EmailTemplate[]) {
+    return (
+      <div className="flex flex-col gap-2">
+        {templates.map((t) => (
+          <TemplateRow key={t.id} template={t} onClick={() => go(t.id)} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Header row */}
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">Choose a starting point</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Select a template to pre-fill the form, or start blank.
-          </p>
-        </div>
+      {/* Campaign templates (bundles) */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Campaign templates
+        </p>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -135,29 +218,21 @@ export function TemplatePicker() {
         </div>
       </div>
 
-      {/* Templates */}
-      {view === "grid" ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {EMAIL_TEMPLATES.map((t) => (
-            <TemplateCard key={t.id} template={t} onClick={() => go(t.id)} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {EMAIL_TEMPLATES.map((t) => (
-            <TemplateRow key={t.id} template={t} onClick={() => go(t.id)} />
-          ))}
-        </div>
+      {view === "grid" ? renderGrid(bundles) : renderList(bundles)}
+
+      {/* Email layouts — hidden for non-admins */}
+      {!surveyOnly && layouts.length > 0 && (
+        <>
+          <div className="h-6" />
+          <SectionLabel label="Email layouts" />
+          {view === "grid" ? renderGrid(layouts) : renderList(layouts)}
+        </>
       )}
 
       {/* Start blank */}
       <div className="mt-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => go("blank")}
-        >
+        <Button type="button" variant="outline" onClick={() => go("blank")}>
           <Plus className="size-4" />
           Start blank
         </Button>

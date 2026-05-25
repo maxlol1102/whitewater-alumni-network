@@ -15,7 +15,6 @@ import {
 import { Plus, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
-import { HelpBlock } from "@/components/ui/HelpBlock";
 import { useAuth, canEdit, isActive } from "@/lib/auth";
 import { listSurveys } from "@/lib/surveys.functions";
 
@@ -52,12 +51,6 @@ function SurveysList() {
             </Button>
           )
         }
-      />
-
-      <HelpBlock
-        helpKey="survey"
-        fallback={{ title: "Surveys", body: "Surveys collect structured feedback from alumni via Tally.so forms. Responses are automatically captured when alumni submit the form and matched to their record by email." }}
-        className="mb-4"
       />
 
       <Card className="overflow-hidden">

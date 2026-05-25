@@ -33,7 +33,6 @@ import { listSurveys, type SurveyListItem } from "@/lib/surveys.functions";
 import { listAlumni } from "@/lib/alumni.functions";
 import { type EmailTemplate, AUTO_PLACEHOLDERS } from "@/lib/email-templates";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { HelpBlock } from "@/components/ui/HelpBlock";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +86,10 @@ function PlaceholderHints({ template }: { template?: EmailTemplate }) {
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-muted-foreground shrink-0">Auto-replaced on send:</span>
           {auto.map((key) => (
-            <code key={key} className="bg-primary/8 text-primary px-1.5 py-0.5 rounded font-mono text-[11px]">
+            <code
+              key={key}
+              className="bg-primary/8 text-primary px-1.5 py-0.5 rounded font-mono text-[11px]"
+            >
               {key}
             </code>
           ))}
@@ -97,13 +99,53 @@ function PlaceholderHints({ template }: { template?: EmailTemplate }) {
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-muted-foreground shrink-0">Fill in before saving:</span>
           {manual.map((p) => (
-            <code key={p.key} className="bg-amber-50 text-amber-700 border border-amber-200/60 px-1.5 py-0.5 rounded font-mono text-[11px]">
+            <code
+              key={p.key}
+              className="bg-amber-50 text-amber-700 border border-amber-200/60 px-1.5 py-0.5 rounded font-mono text-[11px]"
+            >
               {p.key}
             </code>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Survey fields checklist (sidebar hint for bundle templates)
+// ---------------------------------------------------------------------------
+
+const CHECKLIST_PREVIEW = 8;
+
+function SurveyFieldsChecklist({ fields }: { fields: string[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? fields : fields.slice(0, CHECKLIST_PREVIEW);
+  const hidden = fields.length - CHECKLIST_PREVIEW;
+  return (
+    <Card className="bg-muted/20 p-5 shadow-none">
+      <div className="font-medium text-sm">Survey fields checklist</div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Build your linked Tally form to collect these fields.
+      </p>
+      <ul className="mt-3 space-y-1.5">
+        {visible.map((f) => (
+          <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+            <span className="mt-0.5 shrink-0 text-primary/60">•</span>
+            {f}
+          </li>
+        ))}
+      </ul>
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          className="mt-2 text-xs text-primary hover:underline"
+        >
+          {expanded ? "Show less" : `+${hidden} more fields`}
+        </button>
+      )}
+    </Card>
   );
 }
 
@@ -129,7 +171,9 @@ export function CampaignForm({
   const [campaignType, setCampaignType] = useState<"email" | "survey">(
     isAdmin ? (templateOverride?.campaignType ?? initial?.type ?? "email") : "survey",
   );
-  const [mentorOnly, setMentorOnly] = useState(initial?.filter_mentorship_only ?? false);
+  const [mentorOnly, setMentorOnly] = useState(
+    initial?.filter_mentorship_only ?? templateOverride?.defaultFilters?.mentorshipOnly ?? false,
+  );
   const [tags, setTags] = useState<string[]>(initial?.filter_tags ?? []);
   const [years, setYears] = useState<number[]>(initial?.filter_grad_years ?? []);
 
@@ -159,9 +203,13 @@ export function CampaignForm({
     previewFn({
       data: { filter_mentorship_only: mentorOnly, filter_tags: tags, filter_grad_years: years },
     })
-      .then((r) => { if (!cancelled) setMatched(r.count); })
+      .then((r) => {
+        if (!cancelled) setMatched(r.count);
+      })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [mentorOnly, tags, years, previewFn]);
 
   const {
@@ -174,7 +222,7 @@ export function CampaignForm({
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: initial?.name ?? "",
+      name: templateOverride?.campaignName ?? initial?.name ?? "",
       subject: templateOverride?.subject ?? initial?.subject ?? "",
       body: templateOverride?.body ?? initial?.body ?? "",
       survey_id: initial?.survey_id ?? undefined,
@@ -184,16 +232,34 @@ export function CampaignForm({
   // Sync template override if it changes (e.g. navigating between templates)
   useEffect(() => {
     if (!templateOverride) return;
+    if (templateOverride.campaignName) setValue("name", templateOverride.campaignName);
     setValue("subject", templateOverride.subject);
     setValue("body", templateOverride.body);
     if (isAdmin) setCampaignType(templateOverride.campaignType);
+    if (templateOverride.defaultFilters?.mentorshipOnly !== undefined) {
+      setMentorOnly(templateOverride.defaultFilters.mentorshipOnly);
+    }
   }, [templateOverride, setValue, isAdmin]);
+
+  // Auto-select survey when bundle has a suggestion and surveys finish loading
+  useEffect(() => {
+    if (!templateOverride?.suggestedSurveyTitle || !surveysData?.surveys || watchedSurveyId) return;
+    const key = templateOverride.suggestedSurveyTitle.toLowerCase();
+    const match = (surveysData.surveys as SurveyListItem[]).find((s) =>
+      s.title.toLowerCase().includes(key),
+    );
+    if (match) setValue("survey_id", match.id, { shouldValidate: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surveysData, templateOverride?.suggestedSurveyTitle]);
 
   const watchedBody = watch("body");
   const watchedSurveyId = watch("survey_id");
 
   const selectedSurvey = useMemo(
-    () => (surveysData?.surveys as SurveyListItem[] | undefined)?.find((s) => s.id === watchedSurveyId) ?? null,
+    () =>
+      (surveysData?.surveys as SurveyListItem[] | undefined)?.find(
+        (s) => s.id === watchedSurveyId,
+      ) ?? null,
     [surveysData, watchedSurveyId],
   );
 
@@ -279,28 +345,44 @@ export function CampaignForm({
               )}
 
               <div className="space-y-1.5">
-                <Label>Name <span className="text-destructive">*</span></Label>
+                <Label>
+                  Name <span className="text-destructive">*</span>
+                </Label>
                 <Input {...register("name")} />
                 {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label>Subject <span className="text-destructive">*</span></Label>
+                <Label>
+                  Subject <span className="text-destructive">*</span>
+                </Label>
                 <Input {...register("subject")} />
-                {errors.subject && <p className="text-xs text-destructive">{errors.subject.message}</p>}
+                {errors.subject && (
+                  <p className="text-xs text-destructive">{errors.subject.message}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <Label>Email body <span className="text-destructive">*</span></Label>
+                <Label>
+                  Email body <span className="text-destructive">*</span>
+                </Label>
                 <Tabs defaultValue="edit">
                   <TabsList className="h-8 w-fit p-0.5">
-                    <TabsTrigger value="edit" className="px-3 py-1 text-xs">Edit</TabsTrigger>
-                    <TabsTrigger value="preview" className="px-3 py-1 text-xs">Preview</TabsTrigger>
+                    <TabsTrigger value="edit" className="px-3 py-1 text-xs">
+                      Edit
+                    </TabsTrigger>
+                    <TabsTrigger value="preview" className="px-3 py-1 text-xs">
+                      Preview
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="edit" className="mt-2 space-y-2">
                     {campaignType === "survey" && (
                       <p className="text-xs text-muted-foreground">
-                        Use <code className="bg-muted px-1 py-0.5 rounded text-[11px] font-mono">{"{{survey_link}}"}</code> where you want each recipient's unique survey link to appear.
+                        Use{" "}
+                        <code className="bg-muted px-1 py-0.5 rounded text-[11px] font-mono">
+                          {"{{survey_link}}"}
+                        </code>{" "}
+                        where you want each recipient's unique survey link to appear.
                       </p>
                     )}
                     <Textarea rows={16} className="font-mono text-xs" {...register("body")} />
@@ -358,6 +440,18 @@ export function CampaignForm({
                     {errors.survey_id && (
                       <p className="text-xs text-destructive">{errors.survey_id.message}</p>
                     )}
+                    {templateOverride?.suggestedSurveyTitle &&
+                      !watchedSurveyId &&
+                      !surveysLoading && (
+                        <p className="text-xs text-amber-600">
+                          This template pairs well with a &ldquo;
+                          {templateOverride.suggestedSurveyTitle}&rdquo; survey.{" "}
+                          <Link to="/surveys/new" className="underline underline-offset-2">
+                            Create one in Surveys
+                          </Link>{" "}
+                          if you don&apos;t have it yet.
+                        </p>
+                      )}
                     {selectedSurvey && (
                       <p className="text-xs text-muted-foreground">
                         Form:{" "}
@@ -391,7 +485,9 @@ export function CampaignForm({
                     <Switch checked={mentorOnly} onCheckedChange={setMentorOnly} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Tags</Label>
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Tags
+                    </Label>
                     <div className="space-y-1">
                       {TAG_OPTIONS.map((t) => (
                         <label key={t} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -407,7 +503,9 @@ export function CampaignForm({
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">Graduation years</Label>
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Graduation years
+                    </Label>
                     <div className="max-h-40 space-y-1 overflow-auto pr-1">
                       {allYears.length === 0 && (
                         <p className="text-xs text-muted-foreground">No graduation years yet.</p>
@@ -438,14 +536,9 @@ export function CampaignForm({
                 </p>
               </Card>
 
-              <HelpBlock
-                helpKey={campaignType === "survey" ? "survey_campaign" : "email_campaign"}
-                fallback={
-                  campaignType === "survey"
-                    ? { title: "Survey campaigns", body: "Each recipient gets a unique tracked link to an embedded Tally form. You can see who opened, clicked, and submitted." }
-                    : { title: "Email campaigns", body: "Each recipient receives a personalized email with their first name and graduation year auto-filled." }
-                }
-              />
+              {mode === "create" && templateOverride?.surveyFields && templateOverride.surveyFields.length > 0 && (
+                <SurveyFieldsChecklist fields={templateOverride.surveyFields} />
+              )}
             </div>
           </CardContent>
 

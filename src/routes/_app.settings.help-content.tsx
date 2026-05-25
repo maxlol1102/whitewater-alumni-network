@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,66 @@ const formSchema = z.object({
 });
 type FormData = z.infer<typeof formSchema>;
 
+const SECTIONS: { id: string; label: string; keys: string[] }[] = [
+  { id: "alumni", label: "Alumni", keys: ["alumni_import"] },
+  { id: "campaigns", label: "Campaigns", keys: ["email_campaign", "survey_campaign"] },
+  { id: "surveys", label: "Surveys", keys: ["survey"] },
+  { id: "mentorship", label: "Mentorship", keys: ["mentorship"] },
+];
+
+function getSection(key: string): string {
+  return SECTIONS.find((s) => s.keys.includes(key))?.id ?? "other";
+}
+
+function ItemsList({
+  items,
+  onEdit,
+  onDelete,
+}: {
+  items: HelpContentRow[];
+  onEdit: (row: HelpContentRow) => void;
+  onDelete: (row: HelpContentRow) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+        No entries in this section.
+      </div>
+    );
+  }
+  return (
+    <div className="divide-y divide-border">
+      {items.map((row) => (
+        <div key={row.key} className="flex items-start gap-4 px-5 py-4">
+          <code className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground w-44 truncate">
+            {row.key}
+          </code>
+          <div className="flex-1 min-w-0">
+            {row.title && (
+              <p className="text-sm font-medium text-foreground truncate">{row.title}</p>
+            )}
+            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{row.body}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => onEdit(row)}>
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => onDelete(row)}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HelpContentPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -74,20 +135,6 @@ function HelpContentPage() {
   const [editing, setEditing] = useState<HelpContentRow | "new" | null>(null);
   const [deleting, setDeleting] = useState<HelpContentRow | null>(null);
 
-  // If navigated here with ?key=..., open that key for editing
-  useEffect(() => {
-    if (!focusKey || !data?.items) return;
-    const found = data.items.find((r) => r.key === focusKey);
-    if (found) {
-      setEditing(found);
-    } else {
-      // key doesn't exist yet — open new dialog pre-filled with that key
-      setEditing("new");
-      reset({ key: focusKey, title: "", body: "" });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusKey, data?.items]);
-
   const {
     register,
     handleSubmit,
@@ -97,6 +144,19 @@ function HelpContentPage() {
     resolver: zodResolver(formSchema),
     defaultValues: { key: "", title: "", body: "" },
   });
+
+  // If navigated here with ?key=..., open that key for editing
+  useEffect(() => {
+    if (!focusKey || !data?.items) return;
+    const found = data.items.find((r) => r.key === focusKey);
+    if (found) {
+      openEdit(found);
+    } else {
+      reset({ key: focusKey, title: "", body: "" });
+      setEditing("new");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey, data?.items]);
 
   function openEdit(row: HelpContentRow) {
     reset({ key: row.key, title: row.title, body: row.body });
@@ -135,6 +195,15 @@ function HelpContentPage() {
 
   const items = data?.items ?? [];
 
+  const knownKeys = SECTIONS.flatMap((s) => s.keys);
+  const otherItems = items.filter((r) => !knownKeys.includes(r.key));
+
+  function itemsForSection(sectionId: string) {
+    const section = SECTIONS.find((s) => s.id === sectionId);
+    if (!section) return otherItems;
+    return section.keys.map((k) => items.find((r) => r.key === k)).filter(Boolean) as HelpContentRow[];
+  }
+
   return (
     <PageContainer>
       <PageHeader
@@ -148,8 +217,8 @@ function HelpContentPage() {
         }
       />
 
-      <Card className="overflow-hidden">
-        {isLoading ? (
+      {isLoading ? (
+        <Card className="overflow-hidden">
           <div className="divide-y divide-border">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-start gap-4 px-5 py-4">
@@ -161,45 +230,45 @@ function HelpContentPage() {
               </div>
             ))}
           </div>
-        ) : items.length === 0 ? (
-          <div className="px-5 py-12 text-center text-sm text-muted-foreground">
-            No help content yet.{" "}
-            <button type="button" onClick={openNew} className="text-primary underline-offset-4 hover:underline">
-              Add the first entry.
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {items.map((row) => (
-              <div key={row.key} className="flex items-start gap-4 px-5 py-4">
-                <code className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground w-44 truncate">
-                  {row.key}
-                </code>
-                <div className="flex-1 min-w-0">
-                  {row.title && (
-                    <p className="text-sm font-medium text-foreground truncate">{row.title}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{row.body}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(row)}>
-                    <Pencil className="size-3.5" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleting(row)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
+        </Card>
+      ) : (
+        <Tabs defaultValue="alumni">
+          <TabsList className="mb-4">
+            {SECTIONS.map((s) => (
+              <TabsTrigger key={s.id} value={s.id}>
+                {s.label}
+              </TabsTrigger>
             ))}
-          </div>
-        )}
-      </Card>
+            {otherItems.length > 0 && (
+              <TabsTrigger value="other">Other</TabsTrigger>
+            )}
+          </TabsList>
+
+          {SECTIONS.map((s) => (
+            <TabsContent key={s.id} value={s.id}>
+              <Card className="overflow-hidden">
+                <ItemsList
+                  items={itemsForSection(s.id)}
+                  onEdit={openEdit}
+                  onDelete={setDeleting}
+                />
+              </Card>
+            </TabsContent>
+          ))}
+
+          {otherItems.length > 0 && (
+            <TabsContent value="other">
+              <Card className="overflow-hidden">
+                <ItemsList
+                  items={otherItems}
+                  onEdit={openEdit}
+                  onDelete={setDeleting}
+                />
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
 
       {/* Edit / New dialog */}
       <Dialog open={editing !== null} onOpenChange={(open) => { if (!open) closeDialog(); }}>

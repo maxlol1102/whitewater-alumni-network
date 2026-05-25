@@ -18,9 +18,16 @@ export type EmailTemplate = {
   subject: string;
   body: string;
   placeholders: PlaceholderMeta[];
-  // future-ready (unused now):
-  // category?: "outreach" | "newsletter" | "event" | "survey"
-  // thumbnail?: string
+  /** "bundle" = full campaign blueprint (name, filters, survey suggestion). "layout" = email body format only. */
+  category: "bundle" | "layout";
+  /** Pre-fills the campaign name field. */
+  campaignName?: string;
+  /** If set, CampaignForm will try to auto-select a survey whose title contains this string. */
+  suggestedSurveyTitle?: string;
+  /** Pre-fills audience filter toggles. */
+  defaultFilters?: { mentorshipOnly?: boolean };
+  /** For survey bundles: the data fields the linked Tally form should collect. Shown in picker and form sidebar. */
+  surveyFields?: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -105,31 +112,159 @@ const eyebrow = (text: string) =>
   `<p style="margin:0 0 12px;font-size:12px;font-weight:600;color:#4B2E83;text-transform:uppercase;letter-spacing:0.8px;font-family:${FONT};">${text}</p>`;
 
 // ---------------------------------------------------------------------------
-// Template 1 — Mentorship Invitation
+// Survey bundle bodies
 // ---------------------------------------------------------------------------
 
-const mentorshipBody = wrap(`
-  ${eyebrow("Mentorship Program · {{graduation_year}} Alumni")}
-  ${h1("Help shape the next generation of CS graduates")}
+const alumniProfileBody = wrap(`
+  ${eyebrow("UWW CS Alumni Directory")}
+  ${h1("Keep your profile current, {{first_name}}")}
   ${p("Hi {{first_name}},")}
-  ${p("Your career path is exactly what current UWW CS students need to hear about. We're looking for alumni like you to join our mentorship program — as little as one hour a month, on your schedule.")}
-  ${p("Whether you want to review resumes, answer career questions, or share what you wish you'd known, students are eager to learn from your experience.")}
-  ${btn("Sign Up to Mentor →", "{{rsvp_url}}")}
+  ${p("We're building a richer alumni directory — one that helps current CS students find mentors by industry, see where graduates land, and understand what the careers available to them actually look like.")}
+  ${p("Your profile is the foundation. A complete entry makes you discoverable to students exploring your field and to faculty looking for the right person to connect them with.")}
+  ${btn("Update My Profile →", "{{survey_link}}")}
+  ${card(
+    `
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">The survey covers four areas</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:2;font-family:${FONT};">
+      <li><strong>Professional</strong> &mdash; company, job title, department, industry, location</li>
+      <li><strong>Career</strong> &mdash; years of experience, skills, certifications</li>
+      <li><strong>Education</strong> &mdash; degree, graduation year</li>
+      <li><strong>Contact</strong> &mdash; email, phone, LinkedIn, portfolio</li>
+    </ul>
+    <p style="margin:16px 0 0;font-size:13px;color:#6b7280;font-family:${FONT};">About 4 minutes to complete.</p>
+  `,
+    "#f0fdf4",
+  )}
+  ${p("Your information stays within the UWW CS alumni network and is never shared externally.", "color:#6b7280;margin-bottom:0;")}
+`);
+
+const mentorshipInterestBody = wrap(`
+  ${eyebrow("Mentorship Program")}
+  ${h1("Would you mentor a UWW CS student, {{first_name}}?")}
+  ${p("Hi {{first_name}},")}
+  ${p("UWW CS students are navigating job searches, early career decisions, and technical growth — and the most valuable resource many of them say they want is time with someone who has done it before.")}
+  ${p("We're expanding our mentorship directory so faculty can match the right students with the right alumni based on topics, availability, and format. A short survey lets you set your own preferences — no fixed schedule required.")}
+  ${btn("Share My Interest →", "{{survey_link}}")}
   ${card(`
-    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">What mentors typically do</p>
-    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:1.9;font-family:${FONT};">
-      <li>1–2 virtual or in-person check-ins per semester</li>
-      <li>Resume and LinkedIn profile reviews</li>
-      <li>Career and interview prep conversations</li>
-      <li>Share your industry network and experience</li>
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">We'll ask about</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:2;font-family:${FONT};">
+      <li>Whether you're open to mentoring</li>
+      <li>Topics you can speak to (career paths, interviews, specific tech, etc.)</li>
+      <li>Your preferred format &mdash; email, video call, or in-person</li>
+      <li>Your general availability (a few hours a semester is enough)</li>
+      <li>Which student level you'd prefer to work with</li>
+      <li>Whether you're open to casual one-off coffee chats</li>
     </ul>
   `)}
-  ${p("Questions? Just reply to this email — we'd love to hear from you.", "margin-bottom:0;")}
+  ${p("Not interested right now? No problem &mdash; just ignore this email.", "color:#6b7280;margin-bottom:0;")}
+`);
+
+const hiringInterestBody = wrap(`
+  ${eyebrow("UWW CS Career Network")}
+  ${h1("Is your company hiring, {{first_name}}?")}
+  ${p("Hi {{first_name}},")}
+  ${p("UWW CS graduates this semester include strong candidates across software development, data engineering, cybersecurity, and systems design. Several employers have told us they'd rather hear directly from us than sort through applications &mdash; and our students feel the same way.")}
+  ${p("If your company has open roles, or if you'd be willing to put in a word for a strong candidate, a short survey is the fastest way to make that connection happen.")}
+  ${btn("Share Hiring Info →", "{{survey_link}}")}
+  ${card(`
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">The survey asks about</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:2;font-family:${FONT};">
+      <li>Whether your company is currently hiring</li>
+      <li>Open internship and full-time positions</li>
+      <li>Your willingness to refer candidates</li>
+      <li>The best recruiting contact at your company</li>
+      <li>Your timeline for filling roles</li>
+    </ul>
+    <p style="margin:16px 0 0;font-size:13px;color:#6b7280;font-family:${FONT};">We'll follow up with a curated shortlist of students who match your needs.</p>
+  `)}
+  ${p("Not hiring right now? You can still indicate you're open to referrals for strong candidates.", "color:#6b7280;margin-bottom:0;")}
+`);
+
+const studentSupportBody = wrap(`
+  ${eyebrow("Student Support Initiative")}
+  ${h1("Can UWW CS students count on you, {{first_name}}?")}
+  ${p("Hi {{first_name}},")}
+  ${p("Finding a job after graduation is one challenge. Being ready for the work itself is another. CS students benefit enormously from alumni who can give them an honest look at what interviews actually test, what resumes need, and what the day-to-day job really involves.")}
+  ${p("We're building a roster of alumni volunteers so faculty can quickly match students with the right person for what they need. You can say yes to as many or as few categories as you'd like.")}
+  ${btn("Tell Us How You Can Help →", "{{survey_link}}")}
+  ${card(`
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">Six types of support</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:2;font-family:${FONT};">
+      <li><strong>Resume reviews</strong> &mdash; one-time feedback on a student's resume</li>
+      <li><strong>Mock interviews</strong> &mdash; practice technical or behavioral interviews</li>
+      <li><strong>Guest speaking</strong> &mdash; share your career experience with a class</li>
+      <li><strong>Workshops</strong> &mdash; lead a short session on a skill or topic you know well</li>
+      <li><strong>Project mentorship</strong> &mdash; advise a student on a capstone or portfolio project</li>
+      <li><strong>Networking introductions</strong> &mdash; make warm introductions within your industry</li>
+    </ul>
+  `)}
+  ${p("No fixed commitment. Faculty will reach out directly for the specific support you've indicated.", "color:#6b7280;margin-bottom:0;")}
+`);
+
+const alumniEngagementBody = wrap(`
+  ${eyebrow("UWW CS Alumni Community")}
+  ${h1("How would you like to stay connected, {{first_name}}?")}
+  ${p("Hi {{first_name}},")}
+  ${p("We'd rather offer you ways to participate that match your interests than fill your inbox with invitations that don't apply.")}
+  ${p("A short survey will help us understand what kinds of involvement make sense for you &mdash; so we can tailor what we send and make sure the alumni network delivers real value.")}
+  ${btn("Share My Preferences →", "{{survey_link}}")}
+  ${card(
+    `
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">We'll ask about</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:2;font-family:${FONT};">
+      <li>Types of events you'd attend &mdash; networking, career-focused, social, or virtual</li>
+      <li>Interest in speaking at a department event or student session</li>
+      <li>Staying connected with other alumni in your field</li>
+      <li>Getting more involved with the department (advisory roles, curriculum input)</li>
+      <li>Donations or sponsorship interest</li>
+    </ul>
+    <p style="margin:16px 0 0;font-size:13px;color:#6b7280;font-family:${FONT};">About 2 minutes. No commitment required.</p>
+  `,
+    "#f0fdf4",
+  )}
+  ${p("Your feedback shapes how we run the alumni network.", "color:#6b7280;margin-bottom:0;")}
 `);
 
 // ---------------------------------------------------------------------------
-// Template 2 — Alumni Newsletter
+// Email layout bodies
 // ---------------------------------------------------------------------------
+
+const mentorshipInviteBody = wrap(`
+  ${eyebrow("Mentorship Program · {{graduation_year}} Alumni")}
+  ${h1("Help shape the next generation of CS graduates")}
+  ${p("Hi {{first_name}},")}
+  ${p("Your career path is exactly what current UWW CS students need to hear about. We're expanding our mentorship program and looking for alumni who'd like to be matched with students based on industry, career stage, and areas of expertise.")}
+  ${p("Whether you want to review a resume, share what interviews really look like, or answer a few questions over coffee &mdash; students are eager to learn from what you've built.")}
+  ${btn("Sign Up to Mentor →", "[[signup_url]]")}
+  ${card(`
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">What mentors typically do</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:1.9;font-family:${FONT};">
+      <li>1&ndash;2 virtual or in-person sessions per semester (flexible)</li>
+      <li>Resume and LinkedIn profile reviews</li>
+      <li>Career and interview prep conversations</li>
+      <li>Share industry experience and network connections</li>
+    </ul>
+  `)}
+  ${p("Questions? Just reply to this email &mdash; we'd love to hear from you.", "margin-bottom:0;")}
+`);
+
+const hiringOutreachBody = wrap(`
+  ${eyebrow("UWW CS Career Network · Class of {{graduation_year}}")}
+  ${h1("UWW CS graduates are ready")}
+  ${p("Hi {{first_name}},")}
+  ${p("This semester's graduates include strong candidates in software engineering, data science, cybersecurity, and systems design &mdash; many with project portfolios, internship experience, and references from faculty who know their work.")}
+  ${p("If your company has openings, or if you'd be willing to make a referral, we'd like to connect the right students with the right opportunities.")}
+  ${btn("Share a Job Opening →", "[[job_url]]")}
+  ${card(`
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">How it works</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:1.9;font-family:${FONT};">
+      <li>Share an opening or indicate you can refer a candidate</li>
+      <li>We match you with 1&ndash;3 students who fit your requirements</li>
+      <li>You connect directly &mdash; no recruiter in the middle</li>
+    </ul>
+  `)}
+  ${p("Reply to this email to share a posting directly or ask any questions.", "color:#6b7280;margin-bottom:0;")}
+`);
 
 const newsletterBody = wrap(`
   ${eyebrow("{{semester}} {{year}}")}
@@ -143,65 +278,94 @@ const newsletterBody = wrap(`
   ${card(`
     <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#111827;font-family:${FONT};">[[Alumni Name]], Class of [[Year]]</p>
     <p style="margin:0 0 14px;font-size:13px;color:#6b7280;font-family:${FONT};">[[Job Title]] at [[Company]]</p>
-    <p style="margin:0;font-size:14px;color:#374151;line-height:1.75;font-style:italic;font-family:${FONT};">"[[Replace with a short quote or insight from this alumni — career advice, a UWW memory, or what they're working on.]]"</p>
+    <p style="margin:0;font-size:14px;color:#374151;line-height:1.75;font-style:italic;font-family:${FONT};">"[[Replace with a short quote or insight from this alumni &mdash; career advice, a UWW memory, or what they're working on.]]"</p>
   `)}
   ${divider()}
   ${h2("Upcoming Events")}
-  ${p("• [[Event 1]] — [[Date]]<br>• [[Event 2]] — [[Date]]<br>• [[Event 3]] — [[Date]]")}
+  ${p("• [[Event 1]] &mdash; [[Date]]<br>• [[Event 2]] &mdash; [[Date]]<br>• [[Event 3]] &mdash; [[Date]]")}
   ${divider()}
-  ${p("We'd love to feature your story in a future issue. Reply to this email to share an update about your career.")}
+  ${p("We'd love to feature your story in a future issue. Reply to share an update about your career.")}
   ${btn("Update Your Profile →", "[[profile_url]]")}
 `);
 
-// ---------------------------------------------------------------------------
-// Template 3 — Event Invitation
-// ---------------------------------------------------------------------------
-
-const eventBody = wrap(`
+const networkingEventBody = wrap(`
   ${accentCard(`
-    <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#111827;font-family:${FONT};">{{event_name}}</p>
-    <p style="margin:0;font-size:14px;color:#6b7280;font-family:${FONT};">{{event_date}} &nbsp;·&nbsp; {{event_location}}</p>
+    <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#111827;font-family:${FONT};">[[Event Name]]</p>
+    <p style="margin:0;font-size:14px;color:#6b7280;font-family:${FONT};">[[Date & Time]] &nbsp;&middot;&nbsp; [[Location]]</p>
   `)}
   ${p("Hi {{first_name}},")}
-  ${p("You're invited to join fellow UWW CS alumni and current students at <strong>{{event_name}}</strong>. [[Replace with 2–3 sentences describing the event, why it matters, and what attendees can expect.]]")}
-  ${card(`
+  ${p("You're invited to join UWW CS alumni and current students at <strong>[[Event Name]]</strong>. [[Replace with 2–3 sentences describing the event, what attendees can expect, and why it's worth the time.]]")}
+  ${card(
+    `
     <table style="width:100%;border-collapse:collapse;font-family:${FONT};">
       <tr>
         <td style="padding:8px 0;font-size:13px;color:#6b7280;width:90px;vertical-align:top;">Date</td>
-        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;">{{event_date}}</td>
+        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;">[[Date & Time]]</td>
       </tr>
       <tr>
         <td style="padding:8px 0;font-size:13px;color:#6b7280;border-top:1px solid #f3f4f6;vertical-align:top;">Location</td>
-        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;border-top:1px solid #f3f4f6;">{{event_location}}</td>
+        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;border-top:1px solid #f3f4f6;">[[Location]]</td>
       </tr>
       <tr>
         <td style="padding:8px 0;font-size:13px;color:#6b7280;border-top:1px solid #f3f4f6;vertical-align:top;">Format</td>
         <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;border-top:1px solid #f3f4f6;">[[In-person / Virtual / Hybrid]]</td>
       </tr>
     </table>
-  `, "#ffffff")}
-  ${btn("RSVP Now →", "{{rsvp_url}}")}
-  ${p("Spots are limited — reserve yours today. Questions? Reply to this email.", "margin-bottom:0;")}
+  `,
+    "#ffffff",
+  )}
+  ${btn("RSVP Now →", "[[rsvp_url]]")}
+  ${p("Spots are limited &mdash; reserve yours today. Questions? Reply to this email.", "margin-bottom:0;")}
 `);
 
-// ---------------------------------------------------------------------------
-// Template 4 — Survey / Feedback Request
-// ---------------------------------------------------------------------------
-
-const surveyBody = wrap(`
-  ${h1("Your feedback helps shape UWW CS")}
+const careerPanelBody = wrap(`
+  ${eyebrow("Career Panel · [[Date]]")}
+  ${h1("Would you speak on our career panel, {{first_name}}?")}
   ${p("Hi {{first_name}},")}
-  ${p("We're running a short survey for UWW CS alumni. It covers [[replace with: career outcomes / mentorship interest / curriculum feedback / etc.]] and takes about 3 minutes to complete.")}
-  ${p("Your responses directly influence how we improve the program for current and future students.")}
-  ${btn("Take the Survey →", "{{survey_link}}")}
+  ${p("We're hosting a career panel for UWW CS students on <strong>[[Date]]</strong> and would love to have you share your perspective. Panels give students a direct line to alumni in their fields &mdash; honest conversations about career paths, day-to-day work, and what they should be doing right now to prepare.")}
+  ${p("Panelists typically join for 45&ndash;60 minutes and take questions from students. [[Replace with any specific topic focus for this panel: e.g., industry trends, job search strategies, technical career paths.]]")}
+  ${btn("I’m Interested →", "[[reply_url]]")}
+  ${card(
+    `
+    <table style="width:100%;border-collapse:collapse;font-family:${FONT};">
+      <tr>
+        <td style="padding:8px 0;font-size:13px;color:#6b7280;width:90px;vertical-align:top;">Date</td>
+        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;">[[Date & Time]]</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;font-size:13px;color:#6b7280;border-top:1px solid #f3f4f6;vertical-align:top;">Format</td>
+        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;border-top:1px solid #f3f4f6;">[[In-person / Virtual]]</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;font-size:13px;color:#6b7280;border-top:1px solid #f3f4f6;vertical-align:top;">Audience</td>
+        <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;border-top:1px solid #f3f4f6;">[[e.g., Junior and senior CS students]]</td>
+      </tr>
+    </table>
+  `,
+    "#ffffff",
+  )}
+  ${p("Just reply to this email to confirm or ask any questions. We'll handle the logistics.", "color:#6b7280;margin-bottom:0;")}
+`);
+
+const studentSupportEmailBody = wrap(`
+  ${eyebrow("Student Support Request")}
+  ${h1("UWW CS students could use your expertise, {{first_name}}")}
+  ${p("Hi {{first_name}},")}
+  ${p("CS students are preparing for a job market that rewards not just technical skills but the ability to present themselves, perform in interviews, and navigate professional relationships. Alumni who've been through this process are the most valuable resource we can offer them.")}
+  ${p("We're looking for alumni willing to help in one or more of the following areas. No fixed schedule &mdash; faculty will coordinate with you based on your availability.")}
+  ${btn("I Can Help →", "[[signup_url]]")}
   ${card(`
-    <p style="margin:0;font-size:13px;color:#374151;line-height:1.9;font-family:${FONT};">
-      ✓ &nbsp;Takes about 3 minutes &nbsp;&nbsp;·&nbsp;&nbsp;
-      ✓ &nbsp;Responses are confidential &nbsp;&nbsp;·&nbsp;&nbsp;
-      ✓ &nbsp;Survey closes {{deadline}}
-    </p>
-  `, "#f0fdf4")}
-  ${p("Thank you for staying connected with the UWW CS community.", "color:#6b7280;margin-bottom:0;")}
+    <p style="margin:0 0 10px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;font-family:${FONT};">Ways to support students</p>
+    <ul style="margin:0;padding-left:20px;font-size:14px;color:#374151;line-height:2;font-family:${FONT};">
+      <li><strong>Resume reviews</strong> &mdash; 30&ndash;45 minutes, one student at a time</li>
+      <li><strong>Mock interviews</strong> &mdash; technical or behavioral, your choice</li>
+      <li><strong>Guest speaking</strong> &mdash; share your career story with a class</li>
+      <li><strong>Workshops</strong> &mdash; lead a focused session on a skill you use at work</li>
+      <li><strong>Project mentorship</strong> &mdash; advise a student on a capstone or portfolio project</li>
+      <li><strong>Networking introductions</strong> &mdash; open doors within your professional network</li>
+    </ul>
+  `)}
+  ${p("Questions? Just reply to this email.", "color:#6b7280;margin-bottom:0;")}
 `);
 
 // ---------------------------------------------------------------------------
@@ -210,22 +374,101 @@ const surveyBody = wrap(`
 
 export const EMAIL_TEMPLATES: EmailTemplate[] = [
   {
-    id: "mentorship-invite",
-    name: "Mentorship Invitation",
-    description: "Recruit alumni to mentor current CS students",
-    campaignType: "email",
-    subject: "You're invited to mentor UWW CS students this semester",
-    body: mentorshipBody,
+    id: "alumni-profile",
+    category: "bundle",
+    name: "Profile & Career Update",
+    description: "Refresh core directory data and learn how alumni want to stay involved.",
+    campaignType: "survey",
+    campaignName: "Alumni Profile & Engagement Survey",
+    subject: "Update your UWW CS alumni profile, {{first_name}}",
+    body: alumniProfileBody,
+    suggestedSurveyTitle: "Alumni Profile",
+    surveyFields: [
+      "Full name",
+      "Preferred email",
+      "Current company",
+      "Job title",
+      "Location",
+      "Skills & expertise",
+      "Graduation year",
+      "LinkedIn / portfolio",
+      "Ways to stay involved",
+    ],
     placeholders: [
       { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
-      { key: "{{graduation_year}}", label: "Graduation year", mode: "auto", example: "2019" },
-      { key: "{{rsvp_url}}", label: "Sign-up URL", mode: "manual", example: "https://uww.edu/mentor-signup" },
+      {
+        key: "{{survey_link}}",
+        label: "Unique survey link",
+        mode: "auto",
+        example: "https://app.com/survey/respond/abc123",
+      },
+    ],
+  },
+  {
+    id: "mentorship-interest",
+    category: "bundle",
+    name: "Mentorship & Student Support",
+    description:
+      "Find alumni who can mentor, review resumes, speak in class, or help with interviews.",
+    campaignType: "survey",
+    campaignName: "Mentorship & Student Support Survey",
+    subject: "Could you support UWW CS students, {{first_name}}?",
+    body: studentSupportBody,
+    suggestedSurveyTitle: "Student Support",
+    defaultFilters: { mentorshipOnly: false },
+    surveyFields: [
+      "Open to mentoring",
+      "Mentorship topics",
+      "Resume reviews",
+      "Mock interviews",
+      "Guest speaking",
+      "Workshop or project support",
+      "Availability",
+    ],
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      {
+        key: "{{survey_link}}",
+        label: "Unique survey link",
+        mode: "auto",
+        example: "https://app.com/survey/respond/abc123",
+      },
+    ],
+  },
+  {
+    id: "hiring-interest",
+    category: "bundle",
+    name: "Hiring & Referrals",
+    description: "Ask alumni for openings, referrals, internships, and recruiting contacts.",
+    campaignType: "survey",
+    campaignName: "Hiring & Referral Survey",
+    subject: "Is your company hiring, {{first_name}}?",
+    body: hiringInterestBody,
+    suggestedSurveyTitle: "Hiring",
+    surveyFields: [
+      "Company currently hiring?",
+      "Internship openings?",
+      "Full-time openings?",
+      "Willing to refer candidates?",
+      "Recruiting contact",
+      "Hiring timeline",
+    ],
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      {
+        key: "{{survey_link}}",
+        label: "Unique survey link",
+        mode: "auto",
+        example: "https://app.com/survey/respond/abc123",
+      },
     ],
   },
   {
     id: "newsletter",
-    name: "Alumni Newsletter",
-    description: "Quarterly department update with news, spotlight, and events",
+    category: "layout",
+    name: "Newsletter / Department Update",
+    campaignName: "Alumni Newsletter",
+    description: "A simple update format for department news, spotlights, and upcoming events.",
     campaignType: "email",
     subject: "UWW CS Alumni Update — {{semester}} {{year}}",
     body: newsletterBody,
@@ -236,38 +479,32 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     ],
   },
   {
-    id: "event-invite",
-    name: "Event Invitation",
-    description: "Career fair, networking night, alumni panel, or reunion",
+    id: "networking-event",
+    category: "layout",
+    name: "Event / Panel Invite",
+    campaignName: "Alumni Event Invitation",
+    description:
+      "One flexible layout for networking nights, panels, guest talks, and RSVP-based events.",
     campaignType: "email",
-    subject: "You're invited: {{event_name}} — {{event_date}}",
-    body: eventBody,
+    subject: "You're invited: [[Event Name]] — [[Date & Time]]",
+    body: networkingEventBody,
     placeholders: [
       { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
-      { key: "{{event_name}}", label: "Event name", mode: "manual", example: "CS Career Night 2025" },
-      { key: "{{event_date}}", label: "Date", mode: "manual", example: "Nov 14, 2025 · 5–7 PM" },
-      { key: "{{event_location}}", label: "Location", mode: "manual", example: "Hyland Hall 1101" },
-      { key: "{{rsvp_url}}", label: "RSVP link", mode: "manual", example: "https://uww.edu/rsvp" },
-    ],
-  },
-  {
-    id: "survey-request",
-    name: "Survey / Feedback Request",
-    description: "Collect alumni feedback with a Tally form and unique tracked links",
-    campaignType: "survey",
-    subject: "Quick survey for UWW CS alumni — takes 3 minutes",
-    body: surveyBody,
-    placeholders: [
-      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
-      { key: "{{survey_link}}", label: "Unique survey link", mode: "auto", example: "https://app.com/survey/respond/abc123" },
-      { key: "{{deadline}}", label: "Deadline", mode: "manual", example: "December 1, 2025" },
+      { key: "[[Event Name]]", label: "Event name", mode: "manual", example: "CS Alumni Night" },
+      {
+        key: "[[Date & Time]]",
+        label: "Date and time",
+        mode: "manual",
+        example: "Nov 14, 2025 · 5-7 PM",
+      },
+      { key: "[[Location]]", label: "Location", mode: "manual", example: "Hyland Hall 1101" },
+      { key: "[[rsvp_url]]", label: "RSVP link", mode: "manual", example: "https://uww.edu/rsvp" },
     ],
   },
 ];
 
 // ---------------------------------------------------------------------------
 // Blank skeleton — used when admin picks "Start blank"
-// Same header/footer as all templates; content blocks are bracketed prompts.
 // ---------------------------------------------------------------------------
 
 const blankBody = wrap(`
@@ -281,14 +518,13 @@ const blankBody = wrap(`
 
 export const BLANK_TEMPLATE: EmailTemplate = {
   id: "blank",
+  category: "layout",
   name: "Blank",
   description: "Standard UWW structure — replace the bracketed content with your own.",
   campaignType: "email",
   subject: "",
   body: blankBody,
-  placeholders: [
-    { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
-  ],
+  placeholders: [{ key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" }],
 };
 
 export function getTemplate(id: string): EmailTemplate | undefined {
