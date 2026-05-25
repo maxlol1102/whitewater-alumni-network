@@ -5,7 +5,7 @@ import { TemplatePicker } from "@/components/campaigns/TemplatePicker";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { useAuth, isActive } from "@/lib/auth";
 import { useEffect } from "react";
-import { getTemplate } from "@/lib/email-templates";
+import { getTemplate, BLANK_TEMPLATE } from "@/lib/email-templates";
 
 export const Route = createFileRoute("/_app/campaigns/new")({
   validateSearch: z.object({ template: z.string().optional() }),
@@ -36,8 +36,8 @@ function NewCampaign() {
     );
   }
 
-  // ?template=blank or unknown id → empty form
-  const template = templateId !== "blank" ? getTemplate(templateId) : undefined;
+  // ?template=blank → skeleton form; unknown id → also blank skeleton
+  const template = templateId === "blank" ? BLANK_TEMPLATE : (getTemplate(templateId) ?? BLANK_TEMPLATE);
 
   return (
     <PageContainer>

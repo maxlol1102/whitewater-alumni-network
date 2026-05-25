@@ -265,6 +265,32 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Blank skeleton — used when admin picks "Start blank"
+// Same header/footer as all templates; content blocks are bracketed prompts.
+// ---------------------------------------------------------------------------
+
+const blankBody = wrap(`
+  ${h1("[[Email headline]]")}
+  ${p("Hi {{first_name}},")}
+  ${p("[[Opening paragraph — introduce the purpose of this email in 2–3 sentences.]]")}
+  ${p("[[Second paragraph — add more detail, context, or a supporting point.]]")}
+  ${btn("[[Button label]]", "[[https://]]")}
+  ${p("Thank you for staying connected with the UWW CS community.", "color:#6b7280;margin-bottom:0;")}
+`);
+
+export const BLANK_TEMPLATE: EmailTemplate = {
+  id: "blank",
+  name: "Blank",
+  description: "Standard UWW structure — replace the bracketed content with your own.",
+  campaignType: "email",
+  subject: "",
+  body: blankBody,
+  placeholders: [
+    { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+  ],
+};
+
 export function getTemplate(id: string): EmailTemplate | undefined {
   return EMAIL_TEMPLATES.find((t) => t.id === id);
 }
