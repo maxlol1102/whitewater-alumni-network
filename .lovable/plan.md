@@ -1,48 +1,40 @@
-## CRUD audit
+# Handoff Documentation for Local AI Coding Agents
 
-| Entity | Backend | Notes |
-|---|---|---|
-| Alumni | ✅ list, get, create, update, archive/unarchive, delete, CSV import | Wired to DB |
-| Campaigns | ✅ list, get, create, update, delete, send, previewRecipients | Wired to DB |
-| Users (profiles) | ✅ list, invite, update, disable, reactivate, delete, resend/cancel invite | Wired to DB |
-| Dashboard | ✅ getDashboardStats | Wired to DB |
-| **Surveys** | ❌ **No server functions** — entire UI reads MOCK_SURVEYS / MOCK_SURVEY_RESPONSES | DB tables exist (`surveys`, `survey_responses`) with RLS, but unused |
-| **Audit log** | ❌ Reads MOCK_AUDIT_LOGS | DB table `audit_logs` exists with admin RLS, but nothing writes or reads from it |
-| Mentorship | ⚠️ Reads MOCK_ALUMNI | Should derive from alumni server fn (cosmetic — same data shape) |
-| SurveyForm campaign picker | ⚠️ Uses MOCK_CAMPAIGNS | Should use `listCampaigns` |
+Before writing anything, one important correction: **this project has NOT been migrated off Lovable Cloud.** The runtime is still pointing at the Lovable-managed Supabase project `dflyfzcctmzxfkdzpynb`. The ID `lahnnjgugabyqtnkhtgd` only appears (inert) in `supabase/config.toml` and `VITE_SUPABASE_PROJECT_ID`. The actual `.env` `VITE_SUPABASE_URL` + publishable key, and all auth/data traffic, still hit `dflyfzcctmzxfkdzpynb`.
 
-## Plan
+The plan below documents the project **as it exists today** so an external agent (Claude / Codex / Cursor) can work on a local clone. It will call out exactly what the user must change on their own machine to point at `lahnnjgugabyqtnkhtgd` once they've actually copied schema + data there, since Lovable will overwrite those edits inside this project.
 
-### 1. Surveys CRUD (the real gap)
-Create `src/lib/surveys.functions.ts` with:
-- `listSurveys` — joins linked campaign name + accurate `response_count`
-- `getSurvey(id)`
-- `createSurvey({ title, form_url, description, campaign_id? })`
-- `updateSurvey({ id, ...fields })`
-- `deleteSurvey(id)`
-- `listSurveyResponses(survey_id)` — joins alumni name/email when matched
+## Deliverables (all written to `/mnt/documents/`)
 
-All `.middleware([requireSupabaseAuth])`, RLS already restricts to admin.
+1. **`AGENTS.md`** — single root-level agent context file covering:
+   - Product summary (alumni CRM: admin manages alumni, runs email campaigns, sends surveys, mentorship matching, audit log; roles = admin vs faculty/student user vs invited/disabled; from `src/lib/auth.tsx` + routes).
+   - Stack: TanStack Start v1 + React 19 + Vite 7 + Tailwind v4 + shadcn/ui + TanStack Query + Supabase JS + Zod + Sonner.
+   - Folder map: `src/routes/` (flat dot-routing, `_app.*` = authed shell), `src/components/{layout,alumni,campaigns,surveys,users,ui}`, `src/lib/*.functions.ts` (server fns) + `*.server.ts` (admin-only helpers), `src/integrations/supabase/*` (auto-generated, never edit).
+   - Auth: `src/lib/auth.tsx` (`AuthProvider`, `useAuth`, `identityOf`, `canAccess`, `canEdit`) + gate in `src/components/layout/AppShell.tsx`. Server-side: `requireSupabaseAuth` middleware + `assertCallerIsAdmin` pattern in `src/lib/*.functions.ts`.
+   - Data access rule: **all writes go through `createServerFn` in `src/lib/*.functions.ts`**, never direct `supabase.from(...).insert/update` from components. Reads may use the browser client.
+   - Supabase schema summary: tables `profiles`, `alumni`, `campaigns`, `surveys`, `survey_responses`, `audit_logs`; DB functions `is_admin`, `handle_new_user`, `set_updated_at`; RLS = admins full access via `is_admin(auth.uid())`, active users can read alumni, users can read/update own profile, audit_logs admin-read-only and write-only via server fn.
+   - No storage buckets, no edge functions in use (any inherited ones are not part of the runtime).
+   - Rules for Claude: read existing files first, reuse `PageContainer`/`PageHeader`/`PageSection`/`Breadcrumbs`/`FormItemLayout`/`EmptyState`, follow flat route naming (`_app.{section}.$id_.edit.tsx`), never edit auto-generated Supabase files, never store roles outside `profiles.account_role`, never bypass RLS from the browser, always `writeAudit` after admin mutations, always run `bun run build` + `bun run typecheck` before declaring done.
 
-Wire into:
-- `src/routes/_app.surveys.index.tsx` — replace MOCK with `useServerFn(listSurveys)` + query.
-- `src/routes/_app.surveys.$id.tsx` — replace MOCK with `getSurvey` + `listSurveyResponses`; add Delete button (mutation → invalidate + nav back).
-- `src/routes/_app.surveys.$id.edit.tsx` — load via `getSurvey`.
-- `src/components/surveys/SurveyForm.tsx` — call `createSurvey` / `updateSurvey`; replace MOCK_CAMPAIGNS dropdown with `listCampaigns` server fn.
-- Convert "Create survey" to a **modal** on the index page (consistent with the campaigns pattern just shipped).
+2. **`MIGRATION_TO_OWN_SUPABASE.md`** — concrete checklist for actually moving to `lahnnjgugabyqtnkhtgd` on the local clone:
+   - What Lovable owns and will rewrite inside the Lovable project (`.env`, `src/integrations/supabase/client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`) — so the migration only sticks **on the local clone, outside Lovable's sync**.
+   - SQL to run on the new project: full schema dump derived from the live tables/RLS/functions listed above (single consolidated migration file).
+   - Data copy options (`pg_dump --data-only` from old → new, or CSV per table).
+   - Auth users: not transferable automatically; either re-invite via the app's existing invite flow or use Supabase admin API to bulk-create.
+   - New env vars to set locally: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (+ `LOVABLE_API_KEY` only if keeping Lovable AI Gateway, otherwise remove any AI calls).
+   - Regenerate `src/integrations/supabase/types.ts` via `supabase gen types typescript --project-id lahnnjgugabyqtnkhtgd`.
+   - Things still Lovable-specific to audit/remove on the local clone: `.lovable/` folder, `CLAUDE.md` if it references Lovable, any `LOVABLE_API_KEY` usage (Lovable AI Gateway), `data-lovable-*` attributes, `wrangler.jsonc` if not deploying to Cloudflare.
 
-### 2. Audit log — read from DB
-Create `src/lib/audit.functions.ts`:
-- `listAuditLogs({ actor_id?, action?, entity_type?, q?, from?, to? })` — server-side filtering, capped to 500 rows.
+3. **`FEATURE_REQUEST_TEMPLATE.md`** — the exact 11-section template from the prompt, pre-filled with project-specific hints (e.g. "Existing Files Claude Should Check First" lists `src/lib/auth.tsx`, the relevant `src/lib/*.functions.ts`, matching route file, and `src/components/layout/*`).
 
-Wire into `src/routes/_app.settings.audit-log.tsx` — replace MOCK_AUDIT_LOGS with query, replace MOCK_USERS in actor filter with `listUsers`.
+4. **`HANDOFF_SUMMARY.md`** — one-page TL;DR pointing at the three docs above and listing the user's next 5 concrete steps locally.
 
-No write API needed yet (no current mutations log to it); writes can be added later when we instrument server fns.
+## What I will NOT do
 
-### 3. Mentorship — use real alumni
-Replace `MOCK_ALUMNI` in `_app.mentorship.tsx` with `useServerFn(listAlumni)` and filter client-side (`mentorship_interest && !archived`). No new server fn needed.
+- Will not edit `.env`, `supabase/config.toml`, or any `src/integrations/supabase/*` file — Lovable will revert them and it would mask the real state.
+- Will not run the schema migration against `lahnnjgugabyqtnkhtgd` — I don't have credentials for it and this project's tools only reach `dflyfzcctmzxfkdzpynb`.
+- Will not invent features or rewrite components.
 
-### Out of scope
-- Auto-writing audit log entries from existing mutations (separate, larger task).
-- Survey response ingestion (no inbound webhook yet).
-- Profile self-edit (RLS already allows; not requested).
+## After approval
+
+I'll read a handful of files I haven't seen yet (`src/routes/__root.tsx`, `src/routes/_app.tsx`, `src/components/layout/Page.tsx`, one representative `*.functions.ts`, `package.json`) to make the docs accurate, then write the four markdown files to `/mnt/documents/` and surface them as artifacts.
