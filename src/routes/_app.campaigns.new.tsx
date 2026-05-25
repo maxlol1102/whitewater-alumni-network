@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CampaignForm } from "@/components/campaigns/CampaignForm";
 import { TemplatePicker } from "@/components/campaigns/TemplatePicker";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
-import { useAuth, isActive } from "@/lib/auth";
+import { useAuth, isActive, canEdit } from "@/lib/auth";
 import { useEffect } from "react";
 import { getTemplate, BLANK_TEMPLATE } from "@/lib/email-templates";
 
@@ -16,12 +16,28 @@ function NewCampaign() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { template: templateId } = Route.useSearch();
+  const isAdmin = canEdit(user);
 
   useEffect(() => {
     if (user && !isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
 
-  // No ?template param → show picker
+  // Non-admins go straight to the blank survey campaign form (no template picker).
+  if (!isAdmin) {
+    return (
+      <PageContainer>
+        <PageHeader
+          title="New survey campaign"
+          description="Pick a survey, set your audience filters, and draft the email your recipients will receive."
+          className="mb-0"
+        />
+        <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />
+        <CampaignForm mode="create" />
+      </PageContainer>
+    );
+  }
+
+  // Admins: No ?template param → show picker
   if (!templateId) {
     return (
       <PageContainer>

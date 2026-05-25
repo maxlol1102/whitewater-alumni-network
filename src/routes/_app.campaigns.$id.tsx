@@ -27,7 +27,7 @@ import {
 import { Send, Pencil, Trash2, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth, canEdit } from "@/lib/auth";
+import { useAuth, canEdit, isActive } from "@/lib/auth";
 import { toast } from "sonner";
 import {
   deleteCampaign,
@@ -55,14 +55,14 @@ function CampaignDetail() {
   const queryClient = useQueryClient();
   const canMutate = canEdit(user);
   useEffect(() => {
-    if (user && user.account_role !== "admin") navigate({ to: "/dashboard" });
+    if (user && !isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
 
   const getFn = useServerFn(getCampaign);
   const { data, isLoading } = useQuery({
     queryKey: ["campaigns", id],
     queryFn: () => getFn({ data: { id } }),
-    enabled: user?.account_role === "admin",
+    enabled: isActive(user),
   });
   const campaign = data?.campaign;
 
@@ -70,7 +70,7 @@ function CampaignDetail() {
   const { data: recipientsData } = useQuery({
     queryKey: ["survey-recipients", id],
     queryFn: () => listRecipientsFn({ data: { campaign_id: id } }),
-    enabled: campaign?.type === "survey" && user?.account_role === "admin",
+    enabled: campaign?.type === "survey" && isActive(user),
   });
   const surveyRecipients: SurveyRecipientRow[] = recipientsData?.recipients ?? [];
 

@@ -16,7 +16,7 @@ import { Plus, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
 import { HelpBlock } from "@/components/ui/HelpBlock";
-import { useAuth, canEdit } from "@/lib/auth";
+import { useAuth, canEdit, isActive } from "@/lib/auth";
 import { listSurveys } from "@/lib/surveys.functions";
 
 export const Route = createFileRoute("/_app/surveys/")({ component: SurveysList });
@@ -25,7 +25,7 @@ function SurveysList() {
   const { user } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (user && user.account_role !== "admin") navigate({ to: "/dashboard" });
+    if (user && !isActive(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
   const canMutate = canEdit(user);
 
@@ -33,7 +33,7 @@ function SurveysList() {
   const { data, isLoading } = useQuery({
     queryKey: ["surveys"],
     queryFn: () => listFn(),
-    enabled: user?.account_role === "admin",
+    enabled: isActive(user),
   });
   const surveys = data?.surveys ?? [];
 

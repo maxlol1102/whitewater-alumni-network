@@ -38,7 +38,7 @@ function CampaignsList() {
   const { data, isLoading } = useQuery({
     queryKey: ["campaigns"],
     queryFn: () => listFn(),
-    enabled: user?.account_role === "admin",
+    enabled: isActive(user),
   });
   const campaigns = data?.campaigns ?? [];
 

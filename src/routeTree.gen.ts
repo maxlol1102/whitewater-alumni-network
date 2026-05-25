@@ -21,6 +21,7 @@ import { Route as SurveyRespondTokenRouteImport } from './routes/survey.respond.
 import { Route as AppSurveysNewRouteImport } from './routes/_app.surveys.new'
 import { Route as AppSurveysIdRouteImport } from './routes/_app.surveys.$id'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app.settings.users'
+import { Route as AppSettingsHelpContentRouteImport } from './routes/_app.settings.help-content'
 import { Route as AppSettingsAuditLogRouteImport } from './routes/_app.settings.audit-log'
 import { Route as AppCampaignsNewRouteImport } from './routes/_app.campaigns.new'
 import { Route as AppCampaignsIdRouteImport } from './routes/_app.campaigns.$id'
@@ -90,6 +91,11 @@ const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
   path: '/settings/users',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsHelpContentRoute = AppSettingsHelpContentRouteImport.update({
+  id: '/settings/help-content',
+  path: '/settings/help-content',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsAuditLogRoute = AppSettingsAuditLogRouteImport.update({
   id: '/settings/audit-log',
   path: '/settings/audit-log',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/campaigns/$id': typeof AppCampaignsIdRoute
   '/campaigns/new': typeof AppCampaignsNewRoute
   '/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/settings/help-content': typeof AppSettingsHelpContentRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/surveys/$id': typeof AppSurveysIdRoute
   '/surveys/new': typeof AppSurveysNewRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/campaigns/$id': typeof AppCampaignsIdRoute
   '/campaigns/new': typeof AppCampaignsNewRoute
   '/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/settings/help-content': typeof AppSettingsHelpContentRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/surveys/$id': typeof AppSurveysIdRoute
   '/surveys/new': typeof AppSurveysNewRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/_app/campaigns/$id': typeof AppCampaignsIdRoute
   '/_app/campaigns/new': typeof AppCampaignsNewRoute
   '/_app/settings/audit-log': typeof AppSettingsAuditLogRoute
+  '/_app/settings/help-content': typeof AppSettingsHelpContentRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
   '/_app/surveys/$id': typeof AppSurveysIdRoute
   '/_app/surveys/new': typeof AppSurveysNewRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/campaigns/$id'
     | '/campaigns/new'
     | '/settings/audit-log'
+    | '/settings/help-content'
     | '/settings/users'
     | '/surveys/$id'
     | '/surveys/new'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/campaigns/$id'
     | '/campaigns/new'
     | '/settings/audit-log'
+    | '/settings/help-content'
     | '/settings/users'
     | '/surveys/$id'
     | '/surveys/new'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/_app/campaigns/$id'
     | '/_app/campaigns/new'
     | '/_app/settings/audit-log'
+    | '/_app/settings/help-content'
     | '/_app/settings/users'
     | '/_app/surveys/$id'
     | '/_app/surveys/new'
@@ -367,6 +379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsUsersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/help-content': {
+      id: '/_app/settings/help-content'
+      path: '/settings/help-content'
+      fullPath: '/settings/help-content'
+      preLoaderRoute: typeof AppSettingsHelpContentRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/audit-log': {
       id: '/_app/settings/audit-log'
       path: '/settings/audit-log'
@@ -441,6 +460,7 @@ interface AppRouteChildren {
   AppCampaignsIdRoute: typeof AppCampaignsIdRoute
   AppCampaignsNewRoute: typeof AppCampaignsNewRoute
   AppSettingsAuditLogRoute: typeof AppSettingsAuditLogRoute
+  AppSettingsHelpContentRoute: typeof AppSettingsHelpContentRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
   AppSurveysIdRoute: typeof AppSurveysIdRoute
   AppSurveysNewRoute: typeof AppSurveysNewRoute
@@ -461,6 +481,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCampaignsIdRoute: AppCampaignsIdRoute,
   AppCampaignsNewRoute: AppCampaignsNewRoute,
   AppSettingsAuditLogRoute: AppSettingsAuditLogRoute,
+  AppSettingsHelpContentRoute: AppSettingsHelpContentRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
   AppSurveysIdRoute: AppSurveysIdRoute,
   AppSurveysNewRoute: AppSurveysNewRoute,

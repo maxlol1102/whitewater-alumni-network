@@ -55,14 +55,14 @@ const NAV: NavItem[] = [
     to: "/campaigns",
     label: "Campaigns",
     icon: Mail,
-    roles: ["admin"],
+    roles: ["admin", "user"],
     section: "Outreach",
   },
   {
     to: "/surveys",
     label: "Surveys",
     icon: ClipboardList,
-    roles: ["admin"],
+    roles: ["admin", "user"],
     section: "Outreach",
   },
   // ── Settings ──────────────────────────────────────────────────────────────

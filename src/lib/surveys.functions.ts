@@ -40,8 +40,7 @@ const IdSchema = z.object({ id: z.string().uuid() });
 
 export const listSurveys = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertCallerIsAdmin(context.supabase, context.userId);
+  .handler(async ({ context: _ctx }) => {
     const { data, error } = await supabaseAdmin
       .from("surveys")
       .select("*, campaigns(name)")
@@ -58,8 +57,7 @@ export const listSurveys = createServerFn({ method: "GET" })
 export const getSurvey = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => IdSchema.parse(i))
-  .handler(async ({ data, context }) => {
-    await assertCallerIsAdmin(context.supabase, context.userId);
+  .handler(async ({ data, context: _ctx }) => {
     const { data: row, error } = await supabaseAdmin
       .from("surveys")
       .select("*")

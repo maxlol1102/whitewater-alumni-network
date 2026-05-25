@@ -13,6 +13,7 @@ export type CampaignRow = {
   subject: string;
   body: string;
   type: "email" | "survey";
+  survey_id: string | null;
   tally_form_id: string | null;
   tally_form_url: string | null;
   status: "draft" | "scheduled" | "sending" | "sent" | "failed";
@@ -51,6 +52,7 @@ const CampaignInputSchema = z
     subject: z.string().min(1).max(300),
     body: z.string().min(1).max(100_000),
     type: z.enum(["email", "survey"]).default("email"),
+    survey_id: z.string().uuid().nullable().optional(),
     tally_form_id: z.string().max(200).nullable().optional(),
     tally_form_url: z.string().url().max(2000).nullable().optional(),
   })
@@ -114,8 +116,7 @@ function getAppOrigin(): string {
 
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertCallerIsAdmin(context.supabase, context.userId);
+  .handler(async ({ context: _ctx }) => {
     const { data, error } = await supabaseAdmin
       .from("campaigns")
       .select("*")
@@ -127,8 +128,7 @@ export const listCampaigns = createServerFn({ method: "GET" })
 export const getCampaign = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => IdSchema.parse(i))
-  .handler(async ({ data, context }) => {
-    await assertCallerIsAdmin(context.supabase, context.userId);
+  .handler(async ({ data, context: _ctx }) => {
     const { data: row, error } = await supabaseAdmin
       .from("campaigns")
       .select("*")
@@ -141,8 +141,7 @@ export const getCampaign = createServerFn({ method: "GET" })
 export const previewRecipients = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => FiltersSchema.parse(i))
-  .handler(async ({ data, context }) => {
-    await assertCallerIsAdmin(context.supabase, context.userId);
+  .handler(async ({ data, context: _ctx }) => {
     const count = await countRecipients(data);
     return { count };
   });
@@ -152,7 +151,25 @@ export const createCampaign = createServerFn({ method: "POST" })
   .inputValidator((i) => CampaignInputSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
-    await assertCallerIsAdmin(supabase, userId);
+    // Email campaigns are admin-only; survey campaigns are open to all active users.
+    if (data.type === "email") await assertCallerIsAdmin(supabase, userId);
+
+    // Auto-fill tally fields from the linked survey when survey_id is provided.
+    let tally_form_id = data.tally_form_id ?? null;
+    let tally_form_url = data.tally_form_url ?? null;
+    if (data.survey_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: survey } = await (supabaseAdmin as any)
+        .from("surveys")
+        .select("tally_form_id, form_url")
+        .eq("id", data.survey_id)
+        .maybeSingle();
+      if (survey) {
+        tally_form_id = (survey.tally_form_id as string | null) ?? null;
+        tally_form_url = (survey.form_url as string | null) ?? null;
+      }
+    }
+
     const recipient_count = await countRecipients(data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: any = {
@@ -160,8 +177,9 @@ export const createCampaign = createServerFn({ method: "POST" })
       subject: data.subject,
       body: data.body,
       type: data.type,
-      tally_form_id: data.tally_form_id ?? null,
-      tally_form_url: data.tally_form_url ?? null,
+      survey_id: data.survey_id ?? null,
+      tally_form_id,
+      tally_form_url,
       filter_mentorship_only: data.filter_mentorship_only,
       filter_tags: data.filter_tags,
       filter_grad_years: data.filter_grad_years,
@@ -203,14 +221,30 @@ export const updateCampaign = createServerFn({ method: "POST" })
       .maybeSingle();
     if (before && before.status !== "draft") throw new Error("Only draft campaigns can be edited");
     const recipient_count = await countRecipients(data);
+    // Auto-fill tally fields from the linked survey when survey_id is provided.
+    let update_tally_form_id = data.tally_form_id ?? null;
+    let update_tally_form_url = data.tally_form_url ?? null;
+    if (data.survey_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: survey } = await (supabaseAdmin as any)
+        .from("surveys")
+        .select("tally_form_id, form_url")
+        .eq("id", data.survey_id)
+        .maybeSingle();
+      if (survey) {
+        update_tally_form_id = (survey.tally_form_id as string | null) ?? null;
+        update_tally_form_url = (survey.form_url as string | null) ?? null;
+      }
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: any = {
       name: data.name,
       subject: data.subject,
       body: data.body,
       type: data.type,
-      tally_form_id: data.tally_form_id ?? null,
-      tally_form_url: data.tally_form_url ?? null,
+      survey_id: data.survey_id ?? null,
+      tally_form_id: update_tally_form_id,
+      tally_form_url: update_tally_form_url,
       filter_mentorship_only: data.filter_mentorship_only,
       filter_tags: data.filter_tags,
       filter_grad_years: data.filter_grad_years,
@@ -434,8 +468,7 @@ async function sendSurveyCampaign({
 export const listSurveyRecipients = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ campaign_id: z.string().uuid() }).parse(i))
-  .handler(async ({ data, context }) => {
-    await assertCallerIsAdmin(context.supabase, context.userId);
+  .handler(async ({ data, context: _ctx }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rows, error } = await (supabaseAdmin as any)
       .from("survey_recipients")

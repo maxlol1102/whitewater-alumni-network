@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageSection } from "@/components/layout/Page";
@@ -14,6 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TAG_OPTIONS } from "@/mocks";
 import { toast } from "sonner";
 import {
@@ -22,10 +29,12 @@ import {
   previewRecipients,
   type CampaignRow,
 } from "@/lib/campaigns.functions";
+import { listSurveys, type SurveyListItem } from "@/lib/surveys.functions";
 import { listAlumni } from "@/lib/alumni.functions";
 import { type EmailTemplate, AUTO_PLACEHOLDERS } from "@/lib/email-templates";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { HelpBlock } from "@/components/ui/HelpBlock";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -56,8 +65,7 @@ const schema = z.object({
   name: z.string().min(1, "Required"),
   subject: z.string().min(1, "Required"),
   body: z.string().min(1, "Required"),
-  tally_form_id: z.string().optional(),
-  tally_form_url: z.string().optional(),
+  survey_id: z.string().uuid().optional(),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -114,9 +122,12 @@ export function CampaignForm({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.account_role === "admin";
 
+  // Non-admins can only create survey campaigns.
   const [campaignType, setCampaignType] = useState<"email" | "survey">(
-    templateOverride?.campaignType ?? initial?.type ?? "email",
+    isAdmin ? (templateOverride?.campaignType ?? initial?.type ?? "email") : "survey",
   );
   const [mentorOnly, setMentorOnly] = useState(initial?.filter_mentorship_only ?? false);
   const [tags, setTags] = useState<string[]>(initial?.filter_tags ?? []);
@@ -133,6 +144,13 @@ export function CampaignForm({
       .filter((y): y is number => typeof y === "number");
     return Array.from(new Set(ys)).sort((a, b) => b - a);
   }, [alumniData]);
+
+  const listSurveysFn = useServerFn(listSurveys);
+  const { data: surveysData, isLoading: surveysLoading } = useQuery({
+    queryKey: ["surveys"],
+    queryFn: () => listSurveysFn(),
+    enabled: campaignType === "survey" && !!user,
+  });
 
   const previewFn = useServerFn(previewRecipients);
   const [matched, setMatched] = useState(initial?.recipient_count ?? 0);
@@ -159,8 +177,7 @@ export function CampaignForm({
       name: initial?.name ?? "",
       subject: templateOverride?.subject ?? initial?.subject ?? "",
       body: templateOverride?.body ?? initial?.body ?? "",
-      tally_form_id: initial?.tally_form_id ?? "",
-      tally_form_url: initial?.tally_form_url ?? "",
+      survey_id: initial?.survey_id ?? undefined,
     },
   });
 
@@ -169,33 +186,34 @@ export function CampaignForm({
     if (!templateOverride) return;
     setValue("subject", templateOverride.subject);
     setValue("body", templateOverride.body);
-    setCampaignType(templateOverride.campaignType);
-  }, [templateOverride, setValue]);
+    if (isAdmin) setCampaignType(templateOverride.campaignType);
+  }, [templateOverride, setValue, isAdmin]);
 
   const watchedBody = watch("body");
+  const watchedSurveyId = watch("survey_id");
+
+  const selectedSurvey = useMemo(
+    () => (surveysData?.surveys as SurveyListItem[] | undefined)?.find((s) => s.id === watchedSurveyId) ?? null,
+    [surveysData, watchedSurveyId],
+  );
 
   const createFn = useServerFn(createCampaign);
   const updateFn = useServerFn(updateCampaign);
 
   const mutation = useMutation({
     mutationFn: async (values: FormData) => {
-      if (campaignType === "survey") {
-        if (!values.tally_form_id?.trim()) {
-          setError("tally_form_id", { message: "Required for survey campaigns" });
-          throw new Error("Tally form ID is required");
-        }
-        if (!values.tally_form_url?.trim()) {
-          setError("tally_form_url", { message: "Required for survey campaigns" });
-          throw new Error("Tally form URL is required");
-        }
+      if (campaignType === "survey" && !values.survey_id) {
+        setError("survey_id", { message: "Please select a survey" });
+        throw new Error("Survey is required");
       }
       const payload = {
         name: values.name,
         subject: values.subject,
         body: values.body,
         type: campaignType,
-        tally_form_id: campaignType === "survey" ? (values.tally_form_id || null) : null,
-        tally_form_url: campaignType === "survey" ? (values.tally_form_url || null) : null,
+        survey_id: campaignType === "survey" ? (values.survey_id ?? null) : null,
+        tally_form_id: null as string | null,
+        tally_form_url: null as string | null,
         filter_mentorship_only: mentorOnly,
         filter_tags: tags,
         filter_grad_years: years,
@@ -211,7 +229,7 @@ export function CampaignForm({
       navigate({ to: "/campaigns" });
     },
     onError: (e: Error) => {
-      if (!e.message.includes("Required")) toast.error(e.message);
+      if (!e.message.includes("required")) toast.error(e.message);
     },
   });
 
@@ -235,28 +253,30 @@ export function CampaignForm({
           </CardHeader>
           <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
             <div className="space-y-4">
-              {/* Campaign type toggle */}
-              <div className="space-y-1.5">
-                <Label>Campaign type</Label>
-                <div className="flex rounded-md border border-input overflow-hidden w-fit">
-                  {(["email", "survey"] as const).map((t, i) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setCampaignType(t)}
-                      className={cn(
-                        "px-5 py-1.5 text-sm font-medium transition-colors",
-                        i > 0 && "border-l border-input",
-                        campaignType === t
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-transparent text-muted-foreground hover:bg-muted",
-                      )}
-                    >
-                      {t === "email" ? "Email" : "Survey"}
-                    </button>
-                  ))}
+              {/* Campaign type toggle — admin only */}
+              {isAdmin && (
+                <div className="space-y-1.5">
+                  <Label>Campaign type</Label>
+                  <div className="flex rounded-md border border-input overflow-hidden w-fit">
+                    {(["email", "survey"] as const).map((t, i) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setCampaignType(t)}
+                        className={cn(
+                          "px-5 py-1.5 text-sm font-medium transition-colors",
+                          i > 0 && "border-l border-input",
+                          campaignType === t
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-transparent text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        {t === "email" ? "Email" : "Survey"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label>Name <span className="text-destructive">*</span></Label>
@@ -302,28 +322,59 @@ export function CampaignForm({
                 <PlaceholderHints template={templateOverride} />
               </div>
 
-              {/* Survey-only Tally fields */}
+              {/* Survey picker — shown for survey campaigns */}
               {campaignType === "survey" && (
-                <div className="rounded-lg border border-border/70 bg-muted/20 p-4 space-y-4">
-                  <div className="text-sm font-medium">Tally form</div>
-                  <div className="space-y-1.5">
-                    <Label>Tally form ID <span className="text-destructive">*</span></Label>
-                    <Input placeholder="e.g. wkAlB0" {...register("tally_form_id")} />
-                    <p className="text-xs text-muted-foreground">
-                      Found in your Tally URL: tally.so/r/<strong>wkAlB0</strong>
-                    </p>
-                    {errors.tally_form_id && (
-                      <p className="text-xs text-destructive">{errors.tally_form_id.message}</p>
-                    )}
+                <div className="rounded-lg border border-border/70 bg-muted/20 p-4 space-y-3">
+                  <div className="text-sm font-medium">
+                    Survey <span className="text-destructive">*</span>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Tally form URL <span className="text-destructive">*</span></Label>
-                    <Input placeholder="https://tally.so/r/wkAlB0" {...register("tally_form_url")} />
-                    <p className="text-xs text-muted-foreground">
-                      Alumni see this form embedded in a branded page.
-                    </p>
-                    {errors.tally_form_url && (
-                      <p className="text-xs text-destructive">{errors.tally_form_url.message}</p>
+                    {surveysLoading ? (
+                      <div className="h-9 rounded-md border border-input bg-muted/40 animate-pulse" />
+                    ) : (surveysData?.surveys ?? []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No surveys found.{" "}
+                        <Link to="/surveys/new" className="text-primary hover:underline">
+                          Create a survey first.
+                        </Link>
+                      </p>
+                    ) : (
+                      <Select
+                        value={watchedSurveyId ?? ""}
+                        onValueChange={(v) => setValue("survey_id", v, { shouldValidate: true })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a survey..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(surveysData?.surveys as SurveyListItem[]).map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {errors.survey_id && (
+                      <p className="text-xs text-destructive">{errors.survey_id.message}</p>
+                    )}
+                    {selectedSurvey && (
+                      <p className="text-xs text-muted-foreground">
+                        Form:{" "}
+                        <a
+                          href={selectedSurvey.form_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {selectedSurvey.form_url}
+                        </a>
+                        {selectedSurvey.tally_form_id && (
+                          <Badge variant="outline" className="ml-2 font-mono text-[11px]">
+                            {selectedSurvey.tally_form_id}
+                          </Badge>
+                        )}
+                      </p>
                     )}
                   </div>
                 </div>
