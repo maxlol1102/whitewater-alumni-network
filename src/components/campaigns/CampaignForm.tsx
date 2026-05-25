@@ -24,7 +24,32 @@ import {
 } from "@/lib/campaigns.functions";
 import { listAlumni } from "@/lib/alumni.functions";
 import { type EmailTemplate, AUTO_PLACEHOLDERS } from "@/lib/email-templates";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+
+// ---------------------------------------------------------------------------
+// Preview placeholder substitution
+// ---------------------------------------------------------------------------
+
+const PREVIEW_SAMPLES: Record<string, string> = {
+  "{{first_name}}": "Jordan",
+  "{{graduation_year}}": "2020",
+  "{{survey_link}}": "#preview",
+  "{{rsvp_url}}": "#preview",
+  "{{event_name}}": "CS Career Night 2025",
+  "{{event_date}}": "Nov 14, 2025 · 5–7 PM",
+  "{{event_location}}": "Hyland Hall 1101",
+  "{{semester}}": "Fall",
+  "{{year}}": "2025",
+  "{{deadline}}": "December 1, 2025",
+};
+
+function applyPreviewSamples(html: string): string {
+  return Object.entries(PREVIEW_SAMPLES).reduce(
+    (out, [key, val]) => out.replaceAll(key, val),
+    html,
+  );
+}
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -125,6 +150,7 @@ export function CampaignForm({
     handleSubmit,
     setValue,
     setError,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -144,6 +170,8 @@ export function CampaignForm({
     setValue("body", templateOverride.body);
     setCampaignType(templateOverride.campaignType);
   }, [templateOverride, setValue]);
+
+  const watchedBody = watch("body");
 
   const createFn = useServerFn(createCampaign);
   const updateFn = useServerFn(updateCampaign);
@@ -243,12 +271,32 @@ export function CampaignForm({
 
               <div className="space-y-1.5">
                 <Label>Email body <span className="text-destructive">*</span></Label>
-                {campaignType === "survey" && (
-                  <p className="text-xs text-muted-foreground">
-                    Use <code className="bg-muted px-1 py-0.5 rounded text-[11px] font-mono">{"{{survey_link}}"}</code> where you want each recipient's unique survey link to appear.
-                  </p>
-                )}
-                <Textarea rows={16} className="font-mono text-xs" {...register("body")} />
+                <Tabs defaultValue="edit">
+                  <TabsList className="h-8 w-fit p-0.5">
+                    <TabsTrigger value="edit" className="px-3 py-1 text-xs">Edit</TabsTrigger>
+                    <TabsTrigger value="preview" className="px-3 py-1 text-xs">Preview</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="edit" className="mt-2 space-y-2">
+                    {campaignType === "survey" && (
+                      <p className="text-xs text-muted-foreground">
+                        Use <code className="bg-muted px-1 py-0.5 rounded text-[11px] font-mono">{"{{survey_link}}"}</code> where you want each recipient's unique survey link to appear.
+                      </p>
+                    )}
+                    <Textarea rows={16} className="font-mono text-xs" {...register("body")} />
+                  </TabsContent>
+                  <TabsContent value="preview" className="mt-2">
+                    <iframe
+                      srcDoc={applyPreviewSamples(watchedBody ?? "")}
+                      sandbox="allow-same-origin"
+                      className="w-full rounded-md border border-input bg-white"
+                      style={{ minHeight: "28rem" }}
+                      title="Email preview"
+                    />
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      Placeholders replaced with sample values for preview.
+                    </p>
+                  </TabsContent>
+                </Tabs>
                 {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
                 <PlaceholderHints template={templateOverride} />
               </div>
