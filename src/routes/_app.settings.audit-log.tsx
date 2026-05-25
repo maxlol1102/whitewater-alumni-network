@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Download } from "lucide-react";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -79,7 +80,7 @@ function AuditLogPage() {
       <PageHeader title="Audit Log" description="Append-only record of important activity in the system." actions={<Button variant="outline" onClick={exportCsv}><Download className="size-4" />Export CSV</Button>} />
 
       <Card className="p-4 mb-4">
-        <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-2">
           <div className="relative lg:col-span-2">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="pl-8" />
@@ -105,8 +106,13 @@ function AuditLogPage() {
               {entities.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <DateRangePicker
+            from={from}
+            to={to}
+            onFromChange={setFrom}
+            onToChange={setTo}
+            className="lg:col-span-2"
+          />
         </div>
       </Card>
 
