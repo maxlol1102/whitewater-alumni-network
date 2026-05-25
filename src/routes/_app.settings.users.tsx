@@ -189,7 +189,7 @@ function UsersPage() {
     <PageContainer>
       <PageHeader
         title="Users"
-        description="Control who can access the platform. One admin account — everyone else is faculty or student."
+        description="Control who can access the platform. One admin account, everyone else is faculty or student."
         actions={
           <Button asChild>
             <Link to="/settings/users/new">

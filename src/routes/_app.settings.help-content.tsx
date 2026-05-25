@@ -139,7 +139,7 @@ function HelpContentPage() {
     <PageContainer>
       <PageHeader
         title="Help content"
-        description="Edit the help blocks shown across the app. Save once — the update appears everywhere that key is used, instantly."
+        description="Edit the help blocks shown across the app. Save once and the update appears everywhere that key is used."
         actions={
           <Button onClick={openNew}>
             <Plus className="size-4" />

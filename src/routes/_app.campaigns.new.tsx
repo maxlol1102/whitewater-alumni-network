@@ -43,7 +43,7 @@ function NewCampaign() {
     <PageContainer>
       <PageHeader
         title={template ? `${template.name} campaign` : "New campaign"}
-        description="Replace the bracketed content with your own. Save as draft — review and send when you're ready."
+        description="Replace the bracketed content with your own. Save as draft, then review and send when you're ready."
         className="mb-0"
       />
       <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />

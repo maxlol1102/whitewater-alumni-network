@@ -46,7 +46,7 @@ function CampaignsList() {
     <PageContainer>
       <PageHeader
         title="Campaigns"
-        description="Reach the right alumni with the right message. Draft, target, and send — then track every open and response."
+        description="Reach the right alumni with the right message. Draft, target, send, and track every open and response."
         actions={
           canMutate ? (
             <Button asChild>
