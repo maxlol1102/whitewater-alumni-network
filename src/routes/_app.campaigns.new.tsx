@@ -26,8 +26,8 @@ function NewCampaign() {
     return (
       <PageContainer>
         <PageHeader
-          title="Create campaign"
-          description="Choose a template or start blank."
+          title="New campaign"
+          description="Every template includes UWW branding and auto-fills recipient details. Pick one and your copy is half-written."
           className="mb-0"
         />
         <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />
@@ -43,7 +43,7 @@ function NewCampaign() {
     <PageContainer>
       <PageHeader
         title={template ? `${template.name} campaign` : "New campaign"}
-        description="Edit the pre-filled content, then save as draft."
+        description="Replace the bracketed content with your own. Save as draft — review and send when you're ready."
         className="mb-0"
       />
       <Breadcrumbs items={[{ label: "Campaigns", to: "/campaigns" }, { label: "New" }]} />

@@ -15,8 +15,8 @@ function NewSurvey() {
   return (
     <PageContainer>
       <PageHeader
-        title="Create survey"
-        description="Link an external form and track responses by email."
+        title="New survey"
+        description="Connect a Tally form and start capturing structured alumni feedback — no code, no manual imports."
         className="mb-0"
       />
       <Breadcrumbs items={[{ label: "Surveys", to: "/surveys" }, { label: "New" }]} />

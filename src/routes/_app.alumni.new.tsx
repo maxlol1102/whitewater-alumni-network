@@ -14,7 +14,7 @@ function NewAlumni() {
   }, [user, navigate]);
   return (
     <PageContainer>
-      <PageHeader title="Add Alumni" description="Create a new alumni record." className="mb-0" />
+      <PageHeader title="Add Alumni" description="Add a graduate to the network. You can always enrich the profile later." className="mb-0" />
       <Breadcrumbs items={[{ label: "Alumni", to: "/alumni" }, { label: "New" }]} />
       <AlumniForm mode="create" />
     </PageContainer>

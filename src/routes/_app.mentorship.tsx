@@ -60,7 +60,7 @@ function MentorshipPage() {
     <PageContainer>
       <PageHeader
         title="Mentorship"
-        description="Alumni who have opted into mentoring current CS students."
+        description="Alumni who've raised their hand to guide the next class. Reach out, match them with students, and close the loop."
       />
 
       <div className="flex flex-wrap gap-2 mb-6">

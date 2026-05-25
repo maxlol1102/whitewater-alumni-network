@@ -46,7 +46,7 @@ function Dashboard() {
 
   return (
     <PageContainer>
-      <PageHeader title="Dashboard" description="An overview of alumni engagement." />
+      <PageHeader title="Dashboard" description="Your alumni network at a glance — activity, reach, and program health." />
 
       {error && (
         <Card className="p-4 mb-4 text-sm text-destructive">

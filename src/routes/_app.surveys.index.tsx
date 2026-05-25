@@ -41,7 +41,7 @@ function SurveysList() {
     <PageContainer>
       <PageHeader
         title="Surveys"
-        description="External surveys and their imported responses."
+        description="Collect structured feedback from alumni. Responses flow in automatically the moment they submit."
         actions={
           canMutate && (
             <Button asChild>
@@ -86,7 +86,7 @@ function SurveysList() {
                   <EmptyState
                     icon={ClipboardList}
                     title="No surveys yet"
-                    description="Create a survey to start collecting alumni responses."
+                    description="Connect a Tally form and every submission lands here, automatically matched to the alumni record."
                     action={
                       canMutate ? (
                         <Button asChild>

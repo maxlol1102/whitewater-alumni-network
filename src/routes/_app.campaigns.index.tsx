@@ -46,7 +46,7 @@ function CampaignsList() {
     <PageContainer>
       <PageHeader
         title="Campaigns"
-        description="Email and survey campaigns sent to alumni segments."
+        description="Reach the right alumni with the right message. Draft, target, and send — then track every open and response."
         actions={
           canMutate ? (
             <Button asChild>
@@ -95,7 +95,7 @@ function CampaignsList() {
                   <EmptyState
                     icon={Mail}
                     title="No campaigns yet"
-                    description="Create an email or survey campaign to reach your alumni."
+                    description="Pick a template and your copy is half-written. Campaigns take minutes to set up."
                     action={
                       canMutate ? (
                         <Button asChild>

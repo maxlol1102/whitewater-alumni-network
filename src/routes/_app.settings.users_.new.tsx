@@ -17,8 +17,8 @@ function NewUser() {
   return (
     <PageContainer>
       <PageHeader
-        title="Create User"
-        description="Add a faculty or student account for approved campus access."
+        title="Invite User"
+        description="Grant a faculty member or student access to the alumni network."
         className="mb-0"
       />
       <Breadcrumbs items={[{ label: "Users", to: "/settings/users" }, { label: "Create User" }]} />

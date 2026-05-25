@@ -100,7 +100,7 @@ function AlumniList() {
     <PageContainer>
       <PageHeader
         title="Alumni"
-        description="Browse, filter, and manage alumni records."
+        description="Every CS graduate in one place. Search, filter, and build the segments that matter."
         actions={
           <>
             {canMutate && (

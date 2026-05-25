@@ -78,7 +78,7 @@ function AuditLogPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="Audit Log" description="Append-only record of important activity in the system." actions={<Button variant="outline" onClick={exportCsv}><Download className="size-4" />Export CSV</Button>} />
+      <PageHeader title="Audit Log" description="Every admin action, timestamped and immutable. Nothing here can be edited or deleted." actions={<Button variant="outline" onClick={exportCsv}><Download className="size-4" />Export CSV</Button>} />
 
       <Card className="p-4 mb-4">
         <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-2">
