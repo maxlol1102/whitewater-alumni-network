@@ -20,6 +20,16 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Environment variables (contain secrets)
+.env
+.env.*
+
+# Claude memory
+.claude/
+
+# Supabase temp
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
