@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
 import { toast } from "sonner";
 import { getSurvey, deleteSurvey, listSurveyResponses } from "@/lib/surveys.functions";
@@ -70,7 +71,13 @@ function SurveyDetail() {
   if (isLoading)
     return (
       <PageContainer>
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <Skeleton className="h-[72px] w-64 mb-10" />
+        <div className="grid md:grid-cols-3 gap-4 mb-4">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+        <Skeleton className="h-48 w-full rounded-xl" />
       </PageContainer>
     );
   const s = surveyData?.survey ?? null;

@@ -13,7 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Mail, Linkedin } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { MENTOR_CATEGORIES, MENTOR_CATEGORY_LABELS } from "@/mocks";
@@ -50,6 +51,10 @@ function MentorshipPage() {
     name: MENTOR_CATEGORY_LABELS[c],
     count: counts[c],
   }));
+
+  const chartConfig = {
+    count: { label: "Mentors", color: "var(--color-primary)" },
+  } satisfies ChartConfig;
 
   return (
     <PageContainer>
@@ -148,16 +153,14 @@ function MentorshipPage() {
 
       <Card className="p-5">
         <div className="font-medium mb-4">Mentor count by category</div>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip cursor={{ fill: "var(--color-accent)" }} />
-              <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <ChartContainer config={chartConfig} className="h-64 w-full">
+          <BarChart data={chartData}>
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+            <ChartTooltip content={<ChartTooltipContent hideLabel />} cursor={{ fill: "var(--color-accent)" }} />
+            <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ChartContainer>
       </Card>
     </PageContainer>
   );

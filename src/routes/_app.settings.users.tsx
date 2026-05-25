@@ -41,7 +41,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, MoreHorizontal, Search, Loader2 } from "lucide-react";
+import { UserPlus, MoreHorizontal, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader } from "@/components/layout/Page";
 import type { Profile, AccountRole, UserCategory, UserStatus } from "@/mocks";
 import { useAuth } from "@/lib/auth";
@@ -257,6 +258,19 @@ function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {usersQ.isLoading && Array.from({ length: 6 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-18 rounded-full" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-7 w-7 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
             {rows.map((u) => {
               const isSelf = user.id === u.id;
               const isAdmin = u.account_role === "admin";
@@ -391,11 +405,6 @@ function UsersPage() {
             })}
           </TableBody>
         </Table>
-        {usersQ.isLoading && (
-          <div className="p-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Loading users…
-          </div>
-        )}
         {usersQ.isError && (
           <div className="p-8 text-center text-sm text-destructive">
             Failed to load users: {(usersQ.error as Error).message}

@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { CampaignForm } from "@/components/campaigns/CampaignForm";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
 import { toast } from "sonner";
 import { getCampaign } from "@/lib/campaigns.functions";
@@ -33,7 +34,11 @@ function EditCampaign() {
   if (isLoading)
     return (
       <PageContainer>
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <Skeleton className="h-[72px] w-64 mb-10" />
+        <div className="mx-auto max-w-5xl space-y-3">
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
       </PageContainer>
     );
   if (!c)

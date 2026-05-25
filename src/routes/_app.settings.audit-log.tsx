@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Download } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -131,7 +132,17 @@ function AuditLogPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">Loading log…</TableCell></TableRow>
+              Array.from({ length: 8 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                </TableRow>
+              ))
             ) : rows.length === 0 ? (
               <TableRow><TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">No log entries match your filters.</TableCell></TableRow>
             ) : (

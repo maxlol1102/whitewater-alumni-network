@@ -53,7 +53,7 @@ const NAV: NavItem[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onSearchClick }: { onSearchClick?: () => void }) {
   const { user, signOut } = useAuth();
 
   const navigate = useNavigate();
@@ -90,17 +90,22 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Search hint */}
+      {/* Search trigger */}
       <div className="px-5 pb-4">
-        <div className="relative">
+        <button
+          type="button"
+          onClick={onSearchClick}
+          className="relative w-full group"
+          aria-label="Open command palette"
+        >
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <div className="h-8 w-full rounded-md bg-surface-200/70 border border-transparent pl-8 pr-12 text-[12.5px] text-muted-foreground flex items-center select-none cursor-not-allowed opacity-60">
+          <div className="h-8 w-full rounded-md bg-surface-200/70 border border-transparent pl-8 pr-12 text-[12.5px] text-muted-foreground flex items-center select-none cursor-pointer group-hover:bg-sidebar-accent/60 group-hover:border-sidebar-border transition-colors">
             Search
           </div>
           <kbd className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground bg-background border border-border rounded px-1.5 py-0.5">
             ⌘K
           </kbd>
-        </div>
+        </button>
       </div>
 
       {/* Nav */}

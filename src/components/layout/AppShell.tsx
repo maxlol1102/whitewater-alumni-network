@@ -1,12 +1,14 @@
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Sidebar } from "./Sidebar";
+import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { useAuth, canAccess, isActive } from "@/lib/auth";
 
 export function AppShell() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { open, setOpen } = useCommandPalette();
 
   useEffect(() => {
     if (loading) return;
@@ -23,10 +25,11 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar onSearchClick={() => setOpen(true)} />
       <main className="ml-[280px] min-h-screen px-10 pb-12">
         <Outlet />
       </main>
+      <CommandPalette open={open} onOpenChange={setOpen} />
     </div>
   );
 }

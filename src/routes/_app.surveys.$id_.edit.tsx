@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { SurveyForm } from "@/components/surveys/SurveyForm";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
 import { getSurvey } from "@/lib/surveys.functions";
 
@@ -28,7 +29,11 @@ function EditSurvey() {
   if (isLoading)
     return (
       <PageContainer>
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <Skeleton className="h-[72px] w-64 mb-10" />
+        <div className="mx-auto max-w-5xl space-y-3">
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+        </div>
       </PageContainer>
     );
   if (!s)

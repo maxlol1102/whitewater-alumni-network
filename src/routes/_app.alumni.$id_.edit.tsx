@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AlumniForm } from "@/components/alumni/AlumniForm";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
 import { getAlumni } from "@/lib/alumni.functions";
 
@@ -27,7 +28,12 @@ function EditAlumni() {
   if (isLoading) {
     return (
       <PageContainer>
-        <Card className="p-8 text-center text-sm text-muted-foreground">Loading…</Card>
+        <Skeleton className="h-[72px] w-64 mb-10" />
+        <div className="mx-auto max-w-5xl space-y-3">
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
       </PageContainer>
     );
   }

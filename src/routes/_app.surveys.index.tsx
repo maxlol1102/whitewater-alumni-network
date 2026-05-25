@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, ClipboardList } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
 import { useAuth, canEdit } from "@/lib/auth";
 import { listSurveys } from "@/lib/surveys.functions";
@@ -64,11 +65,14 @@ function SurveysList() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="py-12 text-center text-sm text-muted-foreground">
-                  Loading surveys…
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-56" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                </TableRow>
+              ))
             ) : surveys.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="py-12">

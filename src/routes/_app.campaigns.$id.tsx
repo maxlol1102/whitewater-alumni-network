@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Send, Pencil, Trash2 } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
 import { toast } from "sonner";
 import {
@@ -78,7 +79,12 @@ function CampaignDetail() {
   if (isLoading)
     return (
       <PageContainer>
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <Skeleton className="h-[72px] w-64 mb-10" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl md:col-span-2" />
+        </div>
       </PageContainer>
     );
   if (!campaign)

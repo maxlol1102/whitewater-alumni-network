@@ -28,6 +28,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MENTOR_CATEGORY_LABELS } from "@/mocks";
 import { useAuth, canEdit } from "@/lib/auth";
 import { getAlumni, archiveAlumni, unarchiveAlumni, deleteAlumni } from "@/lib/alumni.functions";
@@ -83,7 +84,13 @@ function AlumniProfile() {
   if (isLoading) {
     return (
       <PageContainer>
-        <Card className="p-8 text-center text-sm text-muted-foreground">Loading…</Card>
+        <Skeleton className="h-[72px] w-72 mb-10" />
+        <Skeleton className="h-36 w-full rounded-xl mb-4" />
+        <div className="grid md:grid-cols-2 gap-4">
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl md:col-span-2" />
+        </div>
       </PageContainer>
     );
   }
