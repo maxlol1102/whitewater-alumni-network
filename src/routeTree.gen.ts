@@ -17,6 +17,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppSurveysIndexRouteImport } from './routes/_app.surveys.index'
 import { Route as AppCampaignsIndexRouteImport } from './routes/_app.campaigns.index'
 import { Route as AppAlumniIndexRouteImport } from './routes/_app.alumni.index'
+import { Route as SurveyRespondTokenRouteImport } from './routes/survey.respond.$token'
 import { Route as AppSurveysNewRouteImport } from './routes/_app.surveys.new'
 import { Route as AppSurveysIdRouteImport } from './routes/_app.surveys.$id'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app.settings.users'
@@ -68,6 +69,11 @@ const AppAlumniIndexRoute = AppAlumniIndexRouteImport.update({
   id: '/alumni/',
   path: '/alumni/',
   getParentRoute: () => AppRoute,
+} as any)
+const SurveyRespondTokenRoute = SurveyRespondTokenRouteImport.update({
+  id: '/survey/respond/$token',
+  path: '/survey/respond/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppSurveysNewRoute = AppSurveysNewRouteImport.update({
   id: '/surveys/new',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof AppSettingsUsersRoute
   '/surveys/$id': typeof AppSurveysIdRoute
   '/surveys/new': typeof AppSurveysNewRoute
+  '/survey/respond/$token': typeof SurveyRespondTokenRoute
   '/alumni/': typeof AppAlumniIndexRoute
   '/campaigns/': typeof AppCampaignsIndexRoute
   '/surveys/': typeof AppSurveysIndexRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/settings/users': typeof AppSettingsUsersRoute
   '/surveys/$id': typeof AppSurveysIdRoute
   '/surveys/new': typeof AppSurveysNewRoute
+  '/survey/respond/$token': typeof SurveyRespondTokenRoute
   '/alumni': typeof AppAlumniIndexRoute
   '/campaigns': typeof AppCampaignsIndexRoute
   '/surveys': typeof AppSurveysIndexRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/_app/settings/users': typeof AppSettingsUsersRoute
   '/_app/surveys/$id': typeof AppSurveysIdRoute
   '/_app/surveys/new': typeof AppSurveysNewRoute
+  '/survey/respond/$token': typeof SurveyRespondTokenRoute
   '/_app/alumni/': typeof AppAlumniIndexRoute
   '/_app/campaigns/': typeof AppCampaignsIndexRoute
   '/_app/surveys/': typeof AppSurveysIndexRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/surveys/$id'
     | '/surveys/new'
+    | '/survey/respond/$token'
     | '/alumni/'
     | '/campaigns/'
     | '/surveys/'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/surveys/$id'
     | '/surveys/new'
+    | '/survey/respond/$token'
     | '/alumni'
     | '/campaigns'
     | '/surveys'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/_app/settings/users'
     | '/_app/surveys/$id'
     | '/_app/surveys/new'
+    | '/survey/respond/$token'
     | '/_app/alumni/'
     | '/_app/campaigns/'
     | '/_app/surveys/'
@@ -266,6 +278,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SurveyRespondTokenRoute: typeof SurveyRespondTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -325,6 +338,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/alumni/'
       preLoaderRoute: typeof AppAlumniIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/survey/respond/$token': {
+      id: '/survey/respond/$token'
+      path: '/survey/respond/$token'
+      fullPath: '/survey/respond/$token'
+      preLoaderRoute: typeof SurveyRespondTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/surveys/new': {
       id: '/_app/surveys/new'
@@ -459,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  SurveyRespondTokenRoute: SurveyRespondTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

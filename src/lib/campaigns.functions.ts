@@ -1,16 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertCallerIsAdmin } from "./users.server";
 import { writeAudit } from "./alumni.server";
-import { sendBulkEmail } from "./email.server";
+import { sendBulkEmail, sendPersonalizedBatch } from "./email.server";
 
 export type CampaignRow = {
   id: string;
   name: string;
   subject: string;
   body: string;
+  type: "email" | "survey";
+  tally_form_id: string | null;
+  tally_form_url: string | null;
   status: "draft" | "scheduled" | "sending" | "sent" | "failed";
   filter_mentorship_only: boolean;
   filter_tags: string[];
@@ -22,17 +26,35 @@ export type CampaignRow = {
   created_by: string | null;
 };
 
+export type SurveyRecipientRow = {
+  id: string;
+  campaign_id: string;
+  alumni_id: string | null;
+  email: string;
+  name: string;
+  token: string;
+  sent_at: string | null;
+  opened_at: string | null;
+  submitted_at: string | null;
+  created_at: string;
+};
+
 const FiltersSchema = z.object({
   filter_mentorship_only: z.boolean().default(false),
   filter_tags: z.array(z.string().max(80)).max(50).default([]),
   filter_grad_years: z.array(z.number().int().min(1950).max(2100)).max(100).default([]),
 });
 
-const CampaignInputSchema = z.object({
-  name: z.string().min(1).max(200),
-  subject: z.string().min(1).max(300),
-  body: z.string().min(1).max(100_000),
-}).and(FiltersSchema);
+const CampaignInputSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    subject: z.string().min(1).max(300),
+    body: z.string().min(1).max(100_000),
+    type: z.enum(["email", "survey"]).default("email"),
+    tally_form_id: z.string().max(200).nullable().optional(),
+    tally_form_url: z.string().url().max(2000).nullable().optional(),
+  })
+  .and(FiltersSchema);
 
 const IdSchema = z.object({ id: z.string().uuid() });
 
@@ -46,25 +68,44 @@ async function countRecipients(filters: z.infer<typeof FiltersSchema>): Promise<
   return count ?? 0;
 }
 
-async function getRecipientEmails(
+async function getRecipients(
   filters: z.infer<typeof FiltersSchema>,
-): Promise<{ email: string; name: string }[]> {
-  let q = supabaseAdmin.from("alumni").select("email, full_name").eq("archived", false);
+): Promise<{ id: string; email: string; name: string }[]> {
+  let q = supabaseAdmin.from("alumni").select("id, email, full_name").eq("archived", false);
   if (filters.filter_mentorship_only) q = q.eq("mentorship_interest", true);
   if (filters.filter_tags.length) q = q.overlaps("tags", filters.filter_tags);
   if (filters.filter_grad_years.length) q = q.in("graduation_year", filters.filter_grad_years);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => ({ email: r.email as string, name: (r.full_name as string) ?? "" }));
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    email: r.email as string,
+    name: (r.full_name as string) ?? "",
+  }));
+}
+
+function getAppOrigin(): string {
+  try {
+    const req = getRequest();
+    if (req) return new URL(req.url).origin;
+  } catch {
+    // no request context (e.g. called from edge fn)
+  }
+  const host = process.env.PUBLIC_HOST;
+  if (host) return host.startsWith("http") ? host : `https://${host}`;
+  return "http://localhost:3000";
 }
 
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const { data, error } = await supabaseAdmin.from("campaigns").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabaseAdmin
+      .from("campaigns")
+      .select("*")
+      .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { campaigns: (data ?? []) as CampaignRow[] };
+    return { campaigns: (data ?? []) as unknown as CampaignRow[] };
   });
 
 export const getCampaign = createServerFn({ method: "GET" })
@@ -72,9 +113,13 @@ export const getCampaign = createServerFn({ method: "GET" })
   .inputValidator((i) => IdSchema.parse(i))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const { data: row, error } = await supabaseAdmin.from("campaigns").select("*").eq("id", data.id).maybeSingle();
+    const { data: row, error } = await supabaseAdmin
+      .from("campaigns")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (error) throw new Error(error.message);
-    return { campaign: (row ?? null) as CampaignRow | null };
+    return { campaign: (row ?? null) as unknown as CampaignRow | null };
   });
 
 export const previewRecipients = createServerFn({ method: "POST" })
@@ -93,19 +138,24 @@ export const createCampaign = createServerFn({ method: "POST" })
     const { supabase, userId, claims } = context;
     await assertCallerIsAdmin(supabase, userId);
     const recipient_count = await countRecipients(data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = {
+      name: data.name,
+      subject: data.subject,
+      body: data.body,
+      type: data.type,
+      tally_form_id: data.tally_form_id ?? null,
+      tally_form_url: data.tally_form_url ?? null,
+      filter_mentorship_only: data.filter_mentorship_only,
+      filter_tags: data.filter_tags,
+      filter_grad_years: data.filter_grad_years,
+      status: "draft",
+      recipient_count,
+      created_by: userId,
+    };
     const { data: created, error } = await supabaseAdmin
       .from("campaigns")
-      .insert({
-        name: data.name,
-        subject: data.subject,
-        body: data.body,
-        filter_mentorship_only: data.filter_mentorship_only,
-        filter_tags: data.filter_tags,
-        filter_grad_years: data.filter_grad_years,
-        status: "draft",
-        recipient_count,
-        created_by: userId,
-      })
+      .insert(payload)
       .select("*")
       .single();
     if (error) throw new Error(error.message);
@@ -116,10 +166,10 @@ export const createCampaign = createServerFn({ method: "POST" })
       entity_type: "campaign",
       entity_id: created.id,
       entity_label: created.name,
-      summary: `Created campaign ${created.name}`,
+      summary: `Created ${data.type} campaign ${created.name}`,
       after: created,
     });
-    return { campaign: created as CampaignRow };
+    return { campaign: created as unknown as CampaignRow };
   });
 
 const UpdateSchema = CampaignInputSchema.and(z.object({ id: z.string().uuid() }));
@@ -130,20 +180,29 @@ export const updateCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
     await assertCallerIsAdmin(supabase, userId);
-    const { data: before } = await supabaseAdmin.from("campaigns").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await supabaseAdmin
+      .from("campaigns")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (before && before.status !== "draft") throw new Error("Only draft campaigns can be edited");
     const recipient_count = await countRecipients(data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = {
+      name: data.name,
+      subject: data.subject,
+      body: data.body,
+      type: data.type,
+      tally_form_id: data.tally_form_id ?? null,
+      tally_form_url: data.tally_form_url ?? null,
+      filter_mentorship_only: data.filter_mentorship_only,
+      filter_tags: data.filter_tags,
+      filter_grad_years: data.filter_grad_years,
+      recipient_count,
+    };
     const { data: updated, error } = await supabaseAdmin
       .from("campaigns")
-      .update({
-        name: data.name,
-        subject: data.subject,
-        body: data.body,
-        filter_mentorship_only: data.filter_mentorship_only,
-        filter_tags: data.filter_tags,
-        filter_grad_years: data.filter_grad_years,
-        recipient_count,
-      })
+      .update(payload)
       .eq("id", data.id)
       .select("*")
       .single();
@@ -159,7 +218,7 @@ export const updateCampaign = createServerFn({ method: "POST" })
       before,
       after: updated,
     });
-    return { campaign: updated as CampaignRow };
+    return { campaign: updated as unknown as CampaignRow };
   });
 
 export const deleteCampaign = createServerFn({ method: "POST" })
@@ -168,7 +227,11 @@ export const deleteCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
     await assertCallerIsAdmin(supabase, userId);
-    const { data: before } = await supabaseAdmin.from("campaigns").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await supabaseAdmin
+      .from("campaigns")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (before && before.status !== "draft") throw new Error("Only draft campaigns can be deleted");
     const { error } = await supabaseAdmin.from("campaigns").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -191,21 +254,35 @@ export const sendCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context;
     await assertCallerIsAdmin(supabase, userId);
-    const { data: before } = await supabaseAdmin.from("campaigns").select("*").eq("id", data.id).maybeSingle();
+    const { data: before } = await supabaseAdmin
+      .from("campaigns")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!before) throw new Error("Not found");
     if (before.status !== "draft") throw new Error("Only draft campaigns can be sent");
 
-    // Mark as sending immediately so UI reflects progress
     await supabaseAdmin.from("campaigns").update({ status: "sending" }).eq("id", data.id);
 
     try {
-      const recipients = await getRecipientEmails({
+      const campaignType = (before as unknown as CampaignRow).type ?? "email";
+
+      if (campaignType === "survey") {
+        return await sendSurveyCampaign({ before, campaignId: data.id, userId, claims });
+      }
+
+      // --- Email campaign ---
+      const recipients = await getRecipients({
         filter_mentorship_only: before.filter_mentorship_only,
         filter_tags: before.filter_tags ?? [],
         filter_grad_years: before.filter_grad_years ?? [],
       });
 
-      await sendBulkEmail({ recipients, subject: before.subject, html: before.body });
+      const emailResult = await sendBulkEmail({
+        recipients,
+        subject: before.subject,
+        html: before.body,
+      });
 
       const sent_at = new Date().toISOString();
       const { data: updated, error } = await supabaseAdmin
@@ -223,13 +300,16 @@ export const sendCampaign = createServerFn({ method: "POST" })
         entity_type: "campaign",
         entity_id: updated.id,
         entity_label: updated.name,
-        summary: `Sent campaign ${updated.name} to ${recipients.length} recipients`,
+        summary: `Sent email campaign ${updated.name} to ${recipients.length} recipients`,
         before,
         after: updated,
       });
-      return { campaign: updated as CampaignRow };
+
+      return {
+        campaign: updated as unknown as CampaignRow,
+        warning: !emailResult.sent ? "email_not_configured" : undefined,
+      };
     } catch (err) {
-      // Roll status back to failed so the admin can see what happened
       const { data: failed } = await supabaseAdmin
         .from("campaigns")
         .update({ status: "failed" })
@@ -243,11 +323,143 @@ export const sendCampaign = createServerFn({ method: "POST" })
         entity_type: "campaign",
         entity_id: data.id,
         entity_label: before.name,
-        summary: `Campaign ${before.name} failed to send: ${(err as Error).message}`,
+        summary: `Campaign ${before.name} failed: ${(err as Error).message}`,
         before,
         after: failed,
         severity: "critical",
       });
       throw err;
     }
+  });
+
+async function sendSurveyCampaign({
+  before,
+  campaignId,
+  userId,
+  claims,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  before: any;
+  campaignId: string;
+  userId: string;
+  claims: unknown;
+}) {
+  const recipients = await getRecipients({
+    filter_mentorship_only: before.filter_mentorship_only,
+    filter_tags: before.filter_tags ?? [],
+    filter_grad_years: before.filter_grad_years ?? [],
+  });
+
+  // Generate a unique token per recipient
+  const recipientRows = recipients.map((r) => ({
+    campaign_id: campaignId,
+    alumni_id: r.id,
+    email: r.email,
+    name: r.name,
+    token: crypto.randomUUID(),
+  }));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: insertErr } = await (supabaseAdmin as any)
+    .from("survey_recipients")
+    .insert(recipientRows);
+  if (insertErr) throw new Error(insertErr.message);
+
+  // Build personalized emails with unique survey links
+  const origin = getAppOrigin();
+  const emailBatch = recipientRows.map((r) => {
+    const surveyLink = `${origin}/survey/respond/${r.token}`;
+    const html = before.body.replaceAll("{{survey_link}}", surveyLink);
+    return { to: r.email, subject: before.subject, html };
+  });
+
+  const emailResult = await sendPersonalizedBatch(emailBatch);
+  const notConfigured = !emailResult.sent && emailResult.reason === "not_configured";
+
+  // Mark sent_at on all recipients if emails were delivered
+  if (emailResult.sent) {
+    const sentAt = new Date().toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabaseAdmin as any)
+      .from("survey_recipients")
+      .update({ sent_at: sentAt })
+      .eq("campaign_id", campaignId);
+  }
+
+  const sent_at = new Date().toISOString();
+  const { data: updated, error } = await supabaseAdmin
+    .from("campaigns")
+    .update({ status: "sent", sent_at, recipient_count: recipients.length })
+    .eq("id", campaignId)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+
+  await writeAudit({
+    actor_id: userId,
+    actor_email: (claims as { email?: string })?.email ?? null,
+    action: "campaign.sent",
+    entity_type: "campaign",
+    entity_id: updated.id,
+    entity_label: updated.name,
+    summary: `Sent survey campaign ${updated.name} to ${recipients.length} recipients${notConfigured ? " (email provider not configured — links generated only)" : ""}`,
+    before,
+    after: updated,
+  });
+
+  return {
+    campaign: updated as unknown as CampaignRow,
+    warning: notConfigured ? "email_not_configured" : undefined,
+  };
+}
+
+export const listSurveyRecipients = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ campaign_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rows, error } = await (supabaseAdmin as any)
+      .from("survey_recipients")
+      .select("*")
+      .eq("campaign_id", data.campaign_id)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { recipients: (rows ?? []) as SurveyRecipientRow[] };
+  });
+
+// Public server function — no auth middleware. Uses supabaseAdmin (service role).
+// Called from the public /survey/respond/:token page.
+export const trackSurveyOpen = createServerFn({ method: "POST" })
+  .inputValidator((i) => z.object({ token: z.string() }).parse(i))
+  .handler(async ({ data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: row, error } = await (supabaseAdmin as any)
+      .from("survey_recipients")
+      .select("id, opened_at, campaign_id")
+      .eq("token", data.token)
+      .maybeSingle();
+
+    if (error || !row) return { ok: false as const, reason: "invalid_token" };
+
+    if (!row.opened_at) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabaseAdmin as any)
+        .from("survey_recipients")
+        .update({ opened_at: new Date().toISOString() })
+        .eq("token", data.token);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: campaign } = await (supabaseAdmin as any)
+      .from("campaigns")
+      .select("tally_form_url, name")
+      .eq("id", row.campaign_id)
+      .maybeSingle();
+
+    return {
+      ok: true as const,
+      tally_form_url: (campaign?.tally_form_url ?? null) as string | null,
+      campaign_name: (campaign?.name ?? "") as string,
+    };
   });

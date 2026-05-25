@@ -1,5 +1,4 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -16,7 +15,7 @@ import {
 import { Plus, Mail } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
-import { useAuth, canEdit } from "@/lib/auth";
+import { useAuth, isActive } from "@/lib/auth";
 import { listCampaigns, type CampaignRow } from "@/lib/campaigns.functions";
 
 export const Route = createFileRoute("/_app/campaigns/")({ component: CampaignsList });
@@ -32,10 +31,7 @@ const STATUS_STYLES: Record<CampaignRow["status"], string> = {
 function CampaignsList() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => {
-    if (user && user.account_role !== "admin") navigate({ to: "/dashboard" });
-  }, [user, navigate]);
-  const canMutate = canEdit(user);
+  const canMutate = isActive(user);
 
   const listFn = useServerFn(listCampaigns);
   const { data, isLoading } = useQuery({
@@ -49,16 +45,16 @@ function CampaignsList() {
     <PageContainer>
       <PageHeader
         title="Campaigns"
-        description="Email campaigns sent to alumni segments."
+        description="Email and survey campaigns sent to alumni segments."
         actions={
-          canMutate && (
+          canMutate ? (
             <Button asChild>
               <Link to="/campaigns/new">
                 <Plus className="size-4" />
                 Create campaign
               </Link>
             </Button>
-          )
+          ) : undefined
         }
       />
 
@@ -67,6 +63,7 @@ function CampaignsList() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Recipients</TableHead>
@@ -78,6 +75,7 @@ function CampaignsList() {
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
@@ -86,11 +84,11 @@ function CampaignsList() {
               ))
             ) : campaigns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-12">
+                <TableCell colSpan={6} className="py-12">
                   <EmptyState
                     icon={Mail}
                     title="No campaigns yet"
-                    description="Create your first campaign to email a segment of alumni."
+                    description="Create an email or survey campaign to reach your alumni."
                     action={
                       canMutate ? (
                         <Button asChild>
@@ -120,6 +118,11 @@ function CampaignsList() {
                     >
                       {c.name}
                     </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">
+                      {c.type ?? "email"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className={`${STATUS_STYLES[c.status]} capitalize`}>{c.status}</Badge>

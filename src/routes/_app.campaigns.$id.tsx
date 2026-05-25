@@ -6,6 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -16,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Send, Pencil, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Send, Pencil, Trash2, Loader2, AlertTriangle, ExternalLink } from "lucide-react";
 import { Breadcrumbs, PageContainer, PageHeader } from "@/components/layout/Page";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, canEdit } from "@/lib/auth";
@@ -25,7 +33,9 @@ import {
   deleteCampaign,
   getCampaign,
   sendCampaign,
+  listSurveyRecipients,
   type CampaignRow,
+  type SurveyRecipientRow,
 } from "@/lib/campaigns.functions";
 
 export const Route = createFileRoute("/_app/campaigns/$id")({ component: CampaignDetail });
@@ -56,18 +66,42 @@ function CampaignDetail() {
   });
   const campaign = data?.campaign;
 
+  const listRecipientsFn = useServerFn(listSurveyRecipients);
+  const { data: recipientsData } = useQuery({
+    queryKey: ["survey-recipients", id],
+    queryFn: () => listRecipientsFn({ data: { campaign_id: id } }),
+    enabled: campaign?.type === "survey" && user?.account_role === "admin",
+  });
+  const surveyRecipients: SurveyRecipientRow[] = recipientsData?.recipients ?? [];
+
   const sendFn = useServerFn(sendCampaign);
   const delFn = useServerFn(deleteCampaign);
+
   const sendM = useMutation({
     mutationFn: () => sendFn({ data: { id } }),
     onSuccess: (r) => {
-      toast.success(`Sent to ${r.campaign.recipient_count} recipients`);
+      if (r.warning === "email_not_configured") {
+        toast.warning(
+          campaign?.type === "survey"
+            ? `Survey links generated for ${r.campaign.recipient_count} recipients. Add RESEND_API_KEY to send emails.`
+            : "Email provider not configured. Add RESEND_API_KEY to .env to send emails.",
+          { duration: 8000 },
+        );
+      } else {
+        toast.success(
+          campaign?.type === "survey"
+            ? `Survey sent to ${r.campaign.recipient_count} recipients`
+            : `Sent to ${r.campaign.recipient_count} recipients`,
+        );
+      }
     },
     onError: (e: Error) => toast.error(e.message),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["survey-recipients", id] });
     },
   });
+
   const delM = useMutation({
     mutationFn: () => delFn({ data: { id } }),
     onSuccess: () => {
@@ -96,6 +130,10 @@ function CampaignDetail() {
       </PageContainer>
     );
 
+  const isSurvey = campaign.type === "survey";
+  const submittedCount = surveyRecipients.filter((r) => r.submitted_at).length;
+  const openedCount = surveyRecipients.filter((r) => r.opened_at).length;
+
   return (
     <PageContainer>
       <PageHeader title={campaign.name} description={campaign.subject} className="mb-0" />
@@ -122,8 +160,11 @@ function CampaignDetail() {
               <Badge className={`${STATUS_STYLES[campaign.status]} capitalize`}>
                 {campaign.status}
               </Badge>
+              <Badge variant="outline" className="capitalize">
+                {isSurvey ? "Survey" : "Email"}
+              </Badge>
             </div>
-            <div className="flex gap-6 mt-4 text-sm">
+            <div className="flex flex-wrap gap-6 mt-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Recipients:</span>{" "}
                 <span className="font-medium">{campaign.recipient_count}</span>
@@ -134,8 +175,38 @@ function CampaignDetail() {
                   {campaign.sent_at ? new Date(campaign.sent_at).toLocaleString() : "—"}
                 </span>
               </div>
+              {isSurvey && campaign.status === "sent" && (
+                <>
+                  <div>
+                    <span className="text-muted-foreground">Opened:</span>{" "}
+                    <span className="font-medium">{openedCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Submitted:</span>{" "}
+                    <span className="font-medium">{submittedCount}</span>
+                  </div>
+                </>
+              )}
             </div>
+            {isSurvey && campaign.tally_form_url && (
+              <div className="mt-3 flex items-center gap-3 text-sm">
+                <a
+                  href={campaign.tally_form_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Tally form <ExternalLink className="size-3" />
+                </a>
+                {campaign.tally_form_id && (
+                  <span className="text-muted-foreground font-mono text-xs">
+                    {campaign.tally_form_id}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
           {canMutate && (
             <div className="flex gap-2">
               {campaign.status === "draft" && (
@@ -151,23 +222,29 @@ function CampaignDetail() {
                   <AlertDialogTrigger asChild>
                     <Button>
                       <Send className="size-4" />
-                      Send
+                      {isSurvey ? "Send survey" : "Send"}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Send to {campaign.recipient_count} recipients?
+                        {isSurvey
+                          ? `Send survey to ${campaign.recipient_count} recipients?`
+                          : `Send to ${campaign.recipient_count} recipients?`}
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        This cannot be undone. After sending, the campaign body and audience are
-                        locked.
+                        {isSurvey
+                          ? "Each recipient will receive a unique survey link. This cannot be undone."
+                          : "This cannot be undone. After sending, the campaign body and audience are locked."}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => sendM.mutate()}>
-                        Send campaign
+                      <AlertDialogAction
+                        onClick={() => sendM.mutate()}
+                        disabled={sendM.isPending}
+                      >
+                        {isSurvey ? "Send survey" : "Send campaign"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -200,13 +277,68 @@ function CampaignDetail() {
         </div>
       </Card>
 
-      <Card className="p-6">
+      <Card className="p-6 mb-4">
         <div className="font-medium mb-3">Email preview</div>
         <div
           className="border rounded-md p-4 bg-surface-75 prose prose-sm max-w-none"
           dangerouslySetInnerHTML={{ __html: campaign.body }}
         />
       </Card>
+
+      {isSurvey && campaign.status !== "draft" && (
+        <Card className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-border/70 flex items-center justify-between">
+            <div className="font-medium">Survey recipients</div>
+            {surveyRecipients.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {submittedCount} / {surveyRecipients.length} submitted
+              </span>
+            )}
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Sent</TableHead>
+                <TableHead>Opened</TableHead>
+                <TableHead>Submitted</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {surveyRecipients.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                    No recipients yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                surveyRecipients.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.name || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.sent_at ? new Date(r.sent_at).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.opened_at ? new Date(r.opened_at).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {r.submitted_at ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 border">
+                          {new Date(r.submitted_at).toLocaleDateString()}
+                        </Badge>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </PageContainer>
   );
 }

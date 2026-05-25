@@ -58,55 +58,74 @@ Deno.serve(async (req: Request) => {
   const { formId, fields = [], responseId, submittedAt } = payload.data ?? {} as TallyPayload["data"];
   if (!formId) return new Response("Missing formId", { status: 400 });
 
-  // Look up survey by tally_form_id
+  const email = extractEmail(fields);
+  if (!email) return new Response("No email field found", { status: 422 });
+
+  const submittedAtTs = submittedAt ?? new Date().toISOString();
+
+  // --- Path 1: survey campaign (campaigns.tally_form_id) ---
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("id")
+    .eq("tally_form_id", formId)
+    .maybeSingle();
+
+  if (campaign) {
+    const { data: recipient } = await supabase
+      .from("survey_recipients")
+      .select("id, submitted_at")
+      .eq("campaign_id", campaign.id)
+      .eq("email", email)
+      .maybeSingle();
+
+    if (recipient && !recipient.submitted_at) {
+      await supabase
+        .from("survey_recipients")
+        .update({ submitted_at: submittedAtTs })
+        .eq("id", recipient.id);
+    }
+  }
+
+  // --- Path 2: standalone survey (surveys.tally_form_id) ---
   const { data: survey } = await supabase
     .from("surveys")
     .select("id")
     .eq("tally_form_id", formId)
     .maybeSingle();
 
-  if (!survey) {
-    // Unknown form — return 200 so Tally doesn't retry
-    return new Response("ok", { status: 200 });
-  }
+  if (survey) {
+    const { data: alumni } = await supabase
+      .from("alumni")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
-  const email = extractEmail(fields);
-  if (!email) return new Response("No email field found", { status: 422 });
-
-  // Match to alumni record
-  const { data: alumni } = await supabase
-    .from("alumni")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
-
-  // Skip duplicates (same survey + email)
-  const { data: existing } = await supabase
-    .from("survey_responses")
-    .select("id")
-    .eq("survey_id", survey.id)
-    .eq("email", email)
-    .maybeSingle();
-
-  if (!existing) {
-    await supabase.from("survey_responses").insert({
-      survey_id: survey.id,
-      email,
-      alumni_id: alumni?.id ?? null,
-      submitted_at: submittedAt ?? new Date().toISOString(),
-      payload: { responseId, fields },
-    });
-
-    // Sync response_count from actual row count
-    const { count } = await supabase
+    const { data: existing } = await supabase
       .from("survey_responses")
-      .select("id", { count: "exact", head: true })
-      .eq("survey_id", survey.id);
+      .select("id")
+      .eq("survey_id", survey.id)
+      .eq("email", email)
+      .maybeSingle();
 
-    await supabase
-      .from("surveys")
-      .update({ response_count: count ?? 0 })
-      .eq("id", survey.id);
+    if (!existing) {
+      await supabase.from("survey_responses").insert({
+        survey_id: survey.id,
+        email,
+        alumni_id: alumni?.id ?? null,
+        submitted_at: submittedAtTs,
+        payload: { responseId, fields },
+      });
+
+      const { count } = await supabase
+        .from("survey_responses")
+        .select("id", { count: "exact", head: true })
+        .eq("survey_id", survey.id);
+
+      await supabase
+        .from("surveys")
+        .update({ response_count: count ?? 0 })
+        .eq("id", survey.id);
+    }
   }
 
   return new Response("ok", { status: 200 });
