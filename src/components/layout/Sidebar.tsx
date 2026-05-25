@@ -85,7 +85,7 @@ const NAV: NavItem[] = [
     label: "Help content",
     icon: BookOpen,
     roles: ["admin"],
-    section: "Settings",
+    section: "Docs",
   },
 ];
 
