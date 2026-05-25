@@ -27,6 +27,7 @@ type NavItem = {
   section: string;
 };
 const NAV: NavItem[] = [
+  // ── Overview ──────────────────────────────────────────────────────────────
   {
     to: "/dashboard",
     label: "Dashboard",
@@ -34,30 +35,57 @@ const NAV: NavItem[] = [
     roles: ["admin", "user"],
     section: "Overview",
   },
-  { to: "/alumni", label: "Alumni", icon: Users, roles: ["admin", "user"], section: "Engage" },
+  // ── Alumni ────────────────────────────────────────────────────────────────
+  {
+    to: "/alumni",
+    label: "Alumni",
+    icon: Users,
+    roles: ["admin", "user"],
+    section: "Alumni",
+  },
   {
     to: "/mentorship",
     label: "Mentorship",
     icon: Handshake,
     roles: ["admin", "user"],
-    section: "Engage",
+    section: "Alumni",
   },
-  { to: "/campaigns", label: "Campaigns", icon: Mail, roles: ["admin"], section: "Engage" },
-  { to: "/surveys", label: "Surveys", icon: ClipboardList, roles: ["admin"], section: "Engage" },
-  { to: "/settings/users", label: "Users", icon: Settings, roles: ["admin"], section: "Admin" },
+  // ── Outreach ──────────────────────────────────────────────────────────────
+  {
+    to: "/campaigns",
+    label: "Campaigns",
+    icon: Mail,
+    roles: ["admin"],
+    section: "Outreach",
+  },
+  {
+    to: "/surveys",
+    label: "Surveys",
+    icon: ClipboardList,
+    roles: ["admin"],
+    section: "Outreach",
+  },
+  // ── Settings ──────────────────────────────────────────────────────────────
+  {
+    to: "/settings/users",
+    label: "Users",
+    icon: Settings,
+    roles: ["admin"],
+    section: "Settings",
+  },
   {
     to: "/settings/audit-log",
     label: "Audit log",
     icon: ScrollText,
     roles: ["admin"],
-    section: "Admin",
+    section: "Settings",
   },
   {
     to: "/settings/help-content",
     label: "Help content",
     icon: BookOpen,
     roles: ["admin"],
-    section: "Admin",
+    section: "Settings",
   },
 ];
 
