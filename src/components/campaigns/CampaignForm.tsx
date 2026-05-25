@@ -25,6 +25,7 @@ import {
 import { listAlumni } from "@/lib/alumni.functions";
 import { type EmailTemplate, AUTO_PLACEHOLDERS } from "@/lib/email-templates";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { HelpBlock } from "@/components/ui/HelpBlock";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -385,6 +386,15 @@ export function CampaignForm({
                   Excludes archived alumni and rows with missing emails.
                 </p>
               </Card>
+
+              <HelpBlock
+                helpKey={campaignType === "survey" ? "survey_campaign" : "email_campaign"}
+                fallback={
+                  campaignType === "survey"
+                    ? { title: "Survey campaigns", body: "Each recipient gets a unique tracked link to an embedded Tally form. You can see who opened, clicked, and submitted." }
+                    : { title: "Email campaigns", body: "Each recipient receives a personalized email with their first name and graduation year auto-filled." }
+                }
+              />
             </div>
           </CardContent>
 

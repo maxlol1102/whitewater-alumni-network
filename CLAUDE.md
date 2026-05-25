@@ -119,6 +119,48 @@ All data mutations go through `createServerFn` in `src/lib/*.functions.ts`.
 - After a successful mutation, write an audit entry with `writeAudit`.
 - Validate inputs with Zod schemas at the top of the file.
 
+## Help Content (HelpBlock)
+
+Feature-level documentation blocks are stored in the `help_content` database table and rendered via `<HelpBlock>`. Do **not** hard-code explanatory text for features — use `HelpBlock` so admins can update it from Settings → Help content without a code change.
+
+### Where help content lives
+- **DB table**: `public.help_content` — columns: `key` (PK), `title`, `body`, `updated_at`, `updated_by`
+- **Server functions**: `src/lib/help-content.functions.ts` — `getHelpContent`, `listHelpContent`, `upsertHelpContent`, `deleteHelpContent`
+- **Component**: `src/components/ui/HelpBlock.tsx`
+- **Admin UI**: Settings → Help content (`/settings/help-content`)
+
+### Existing keys
+| Key | Used on |
+|-----|---------|
+| `email_campaign` | Campaigns list, CampaignForm (email type) |
+| `survey_campaign` | CampaignForm (survey type) |
+| `survey` | Surveys list |
+| `mentorship` | Mentorship page |
+| `alumni_import` | CSV import dialog |
+
+### Adding a new help key
+1. Visit Settings → Help content → Add new (or insert directly into `help_content` table)
+2. Set a key using `lowercase_with_underscores`
+3. Add `<HelpBlock helpKey="your_key" fallback={{ title: "...", body: "..." }} />` to the page
+
+### Using HelpBlock
+```tsx
+import { HelpBlock } from "@/components/ui/HelpBlock";
+
+// Below PageHeader, above the table/form:
+<HelpBlock
+  helpKey="email_campaign"
+  fallback={{ title: "Email campaigns", body: "Fallback shown if DB row doesn't exist yet." }}
+  className="mb-4"
+/>
+```
+- `helpKey` — matches a row in `help_content`
+- `fallback` — shown while loading or if the key has no DB row (prevents blank screens on first deploy)
+- Admins see a pencil icon that links directly to the edit dialog for that key
+- Content is cached for 5 minutes via React Query
+
 ## Agent Instruction
 
 When generating UI, think like a product designer first. Pick the correct pattern, then build with existing components. Do not redesign unrelated areas. Keep every feature consistent with the layout, form, table, empty state, modal, and navigation patterns above.
+
+Use `HelpBlock` for any feature-level explanatory text. Never hard-code help/documentation content.

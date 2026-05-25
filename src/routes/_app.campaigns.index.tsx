@@ -15,6 +15,7 @@ import {
 import { Plus, Mail } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
+import { HelpBlock } from "@/components/ui/HelpBlock";
 import { useAuth, isActive } from "@/lib/auth";
 import { listCampaigns, type CampaignRow } from "@/lib/campaigns.functions";
 
@@ -56,6 +57,12 @@ function CampaignsList() {
             </Button>
           ) : undefined
         }
+      />
+
+      <HelpBlock
+        helpKey="email_campaign"
+        fallback={{ title: "Email campaigns", body: "Send personalized emails to a filtered segment of alumni. Each recipient receives the email with their first name and graduation year automatically filled in." }}
+        className="mb-4"
       />
 
       <Card className="overflow-hidden">
