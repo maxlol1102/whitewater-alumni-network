@@ -444,12 +444,15 @@ export function CampaignForm({
                       !watchedSurveyId &&
                       !surveysLoading && (
                         <p className="text-xs text-amber-600">
-                          This template pairs well with a &ldquo;
-                          {templateOverride.suggestedSurveyTitle}&rdquo; survey.{" "}
-                          <Link to="/surveys/new" className="underline underline-offset-2">
-                            Create one in Surveys
-                          </Link>{" "}
-                          if you don&apos;t have it yet.
+                          No &ldquo;{templateOverride.suggestedSurveyTitle}&rdquo; survey found.{" "}
+                          <Link
+                            to="/surveys/new"
+                            search={{ title: templateOverride.suggestedSurveyTitle }}
+                            className="underline underline-offset-2"
+                          >
+                            Create it now
+                          </Link>
+                          , then come back to link it here.
                         </p>
                       )}
                     {selectedSurvey && (

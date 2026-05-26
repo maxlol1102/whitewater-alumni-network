@@ -30,7 +30,15 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial?: SurveyRow }) {
+export function SurveyForm({
+  mode,
+  initial,
+  initialTitle,
+}: {
+  mode: "create" | "edit";
+  initial?: SurveyRow;
+  initialTitle?: string;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -49,7 +57,7 @@ export function SurveyForm({ mode, initial }: { mode: "create" | "edit"; initial
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: initial?.title ?? "",
+      title: initial?.title ?? initialTitle ?? "",
       form_url: initial?.form_url ?? "",
       tally_form_id: initial?.tally_form_id ?? "",
       description: initial?.description ?? "",
