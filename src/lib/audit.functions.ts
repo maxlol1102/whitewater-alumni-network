@@ -20,6 +20,8 @@ export type AuditLogRow = {
   created_at: string;
 };
 
+const PAGE_SIZE = 50;
+
 const FiltersSchema = z
   .object({
     actor_id: z.string().uuid().optional(),
@@ -28,6 +30,7 @@ const FiltersSchema = z
     q: z.string().max(200).optional(),
     from: z.string().optional(),
     to: z.string().optional(),
+    page: z.number().int().min(1).optional(),
   })
   .optional();
 
@@ -36,11 +39,15 @@ export const listAuditLogs = createServerFn({ method: "GET" })
   .inputValidator((i) => FiltersSchema.parse(i))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
+    const page = data?.page ?? 1;
+    const offset = (page - 1) * PAGE_SIZE;
+
     let q = supabaseAdmin
       .from("audit_logs")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(500);
+      .range(offset, offset + PAGE_SIZE - 1);
+
     if (data?.actor_id) q = q.eq("actor_id", data.actor_id);
     if (data?.action) q = q.eq("action", data.action);
     if (data?.entity_type) q = q.eq("entity_type", data.entity_type);
@@ -50,7 +57,26 @@ export const listAuditLogs = createServerFn({ method: "GET" })
       const term = data.q.replace(/[%,]/g, "");
       q = q.or(`summary.ilike.%${term}%,entity_label.ilike.%${term}%,actor_email.ilike.%${term}%`);
     }
-    const { data: rows, error } = await q;
+
+    const { data: rows, count, error } = await q;
     if (error) throw new Error(error.message);
-    return { logs: (rows ?? []) as AuditLogRow[] };
+    return {
+      logs: (rows ?? []) as AuditLogRow[],
+      total: count ?? 0,
+      page,
+      pageSize: PAGE_SIZE,
+    };
+  });
+
+export const getAuditLogFilters = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const { data } = await supabaseAdmin
+      .from("audit_logs")
+      .select("action, entity_type")
+      .limit(5000);
+    const actions = Array.from(new Set((data ?? []).map((r) => r.action))).sort();
+    const entityTypes = Array.from(new Set((data ?? []).map((r) => r.entity_type))).sort();
+    return { actions, entityTypes };
   });

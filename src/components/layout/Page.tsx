@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -7,22 +7,21 @@ type BreadcrumbItem = { label: string; to?: string; params?: Record<string, stri
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   if (items.length < 2) return null;
+  // Always navigate to the immediate parent (second-to-last item).
+  // For 2-item lists (Detail/New pages) that's the section root.
+  // For 3-item lists (Edit pages) that's the detail page.
+  const parent = items[items.length - 2];
+  if (!parent.to) return null;
   return (
-    <div className="-mx-10 mb-8 border-b border-border bg-background px-10 py-3">
-      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        {items.map((it, i) => (
-          <span key={i} className="flex items-center gap-1.5">
-            {i > 0 && <ChevronRight className="size-3" />}
-            {it.to ? (
-              <Link to={it.to} params={it.params ?? {}} className="hover:text-foreground">
-                {it.label}
-              </Link>
-            ) : (
-              <span className="text-foreground">{it.label}</span>
-            )}
-          </span>
-        ))}
-      </nav>
+    <div className="mb-6 mt-4">
+      <Link
+        to={parent.to}
+        params={parent.params ?? {}}
+        className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
+        Back to {parent.label}
+      </Link>
     </div>
   );
 }

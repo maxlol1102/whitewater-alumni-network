@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppMentorshipRouteImport } from './routes/_app.mentorship'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppSurveysIndexRouteImport } from './routes/_app.surveys.index'
+import { Route as AppGroupsIndexRouteImport } from './routes/_app.groups.index'
 import { Route as AppCampaignsIndexRouteImport } from './routes/_app.campaigns.index'
 import { Route as AppAlumniIndexRouteImport } from './routes/_app.alumni.index'
 import { Route as SurveyRespondTokenRouteImport } from './routes/survey.respond.$token'
@@ -23,15 +25,23 @@ import { Route as AppSurveysIdRouteImport } from './routes/_app.surveys.$id'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app.settings.users'
 import { Route as AppSettingsHelpContentRouteImport } from './routes/_app.settings.help-content'
 import { Route as AppSettingsAuditLogRouteImport } from './routes/_app.settings.audit-log'
+import { Route as AppGroupsNewRouteImport } from './routes/_app.groups.new'
+import { Route as AppGroupsIdRouteImport } from './routes/_app.groups.$id'
 import { Route as AppCampaignsNewRouteImport } from './routes/_app.campaigns.new'
 import { Route as AppCampaignsIdRouteImport } from './routes/_app.campaigns.$id'
 import { Route as AppAlumniNewRouteImport } from './routes/_app.alumni.new'
+import { Route as AppAlumniImportRouteImport } from './routes/_app.alumni.import'
 import { Route as AppAlumniIdRouteImport } from './routes/_app.alumni.$id'
 import { Route as AppSurveysIdEditRouteImport } from './routes/_app.surveys.$id_.edit'
 import { Route as AppSettingsUsersNewRouteImport } from './routes/_app.settings.users_.new'
 import { Route as AppCampaignsIdEditRouteImport } from './routes/_app.campaigns.$id_.edit'
 import { Route as AppAlumniIdEditRouteImport } from './routes/_app.alumni.$id_.edit'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -59,6 +69,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppSurveysIndexRoute = AppSurveysIndexRouteImport.update({
   id: '/surveys/',
   path: '/surveys/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGroupsIndexRoute = AppGroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCampaignsIndexRoute = AppCampaignsIndexRouteImport.update({
@@ -101,6 +116,16 @@ const AppSettingsAuditLogRoute = AppSettingsAuditLogRouteImport.update({
   path: '/settings/audit-log',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGroupsNewRoute = AppGroupsNewRouteImport.update({
+  id: '/groups/new',
+  path: '/groups/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGroupsIdRoute = AppGroupsIdRouteImport.update({
+  id: '/groups/$id',
+  path: '/groups/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCampaignsNewRoute = AppCampaignsNewRouteImport.update({
   id: '/campaigns/new',
   path: '/campaigns/new',
@@ -114,6 +139,11 @@ const AppCampaignsIdRoute = AppCampaignsIdRouteImport.update({
 const AppAlumniNewRoute = AppAlumniNewRouteImport.update({
   id: '/alumni/new',
   path: '/alumni/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlumniImportRoute = AppAlumniImportRouteImport.update({
+  id: '/alumni/import',
+  path: '/alumni/import',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAlumniIdRoute = AppAlumniIdRouteImport.update({
@@ -145,12 +175,16 @@ const AppAlumniIdEditRoute = AppAlumniIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AppDashboardRoute
   '/mentorship': typeof AppMentorshipRoute
   '/alumni/$id': typeof AppAlumniIdRoute
+  '/alumni/import': typeof AppAlumniImportRoute
   '/alumni/new': typeof AppAlumniNewRoute
   '/campaigns/$id': typeof AppCampaignsIdRoute
   '/campaigns/new': typeof AppCampaignsNewRoute
+  '/groups/$id': typeof AppGroupsIdRoute
+  '/groups/new': typeof AppGroupsNewRoute
   '/settings/audit-log': typeof AppSettingsAuditLogRoute
   '/settings/help-content': typeof AppSettingsHelpContentRoute
   '/settings/users': typeof AppSettingsUsersRoute
@@ -159,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/survey/respond/$token': typeof SurveyRespondTokenRoute
   '/alumni/': typeof AppAlumniIndexRoute
   '/campaigns/': typeof AppCampaignsIndexRoute
+  '/groups/': typeof AppGroupsIndexRoute
   '/surveys/': typeof AppSurveysIndexRoute
   '/alumni/$id/edit': typeof AppAlumniIdEditRoute
   '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
@@ -168,12 +203,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AppDashboardRoute
   '/mentorship': typeof AppMentorshipRoute
   '/alumni/$id': typeof AppAlumniIdRoute
+  '/alumni/import': typeof AppAlumniImportRoute
   '/alumni/new': typeof AppAlumniNewRoute
   '/campaigns/$id': typeof AppCampaignsIdRoute
   '/campaigns/new': typeof AppCampaignsNewRoute
+  '/groups/$id': typeof AppGroupsIdRoute
+  '/groups/new': typeof AppGroupsNewRoute
   '/settings/audit-log': typeof AppSettingsAuditLogRoute
   '/settings/help-content': typeof AppSettingsHelpContentRoute
   '/settings/users': typeof AppSettingsUsersRoute
@@ -182,6 +221,7 @@ export interface FileRoutesByTo {
   '/survey/respond/$token': typeof SurveyRespondTokenRoute
   '/alumni': typeof AppAlumniIndexRoute
   '/campaigns': typeof AppCampaignsIndexRoute
+  '/groups': typeof AppGroupsIndexRoute
   '/surveys': typeof AppSurveysIndexRoute
   '/alumni/$id/edit': typeof AppAlumniIdEditRoute
   '/campaigns/$id/edit': typeof AppCampaignsIdEditRoute
@@ -193,12 +233,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/mentorship': typeof AppMentorshipRoute
   '/_app/alumni/$id': typeof AppAlumniIdRoute
+  '/_app/alumni/import': typeof AppAlumniImportRoute
   '/_app/alumni/new': typeof AppAlumniNewRoute
   '/_app/campaigns/$id': typeof AppCampaignsIdRoute
   '/_app/campaigns/new': typeof AppCampaignsNewRoute
+  '/_app/groups/$id': typeof AppGroupsIdRoute
+  '/_app/groups/new': typeof AppGroupsNewRoute
   '/_app/settings/audit-log': typeof AppSettingsAuditLogRoute
   '/_app/settings/help-content': typeof AppSettingsHelpContentRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
@@ -207,6 +251,7 @@ export interface FileRoutesById {
   '/survey/respond/$token': typeof SurveyRespondTokenRoute
   '/_app/alumni/': typeof AppAlumniIndexRoute
   '/_app/campaigns/': typeof AppCampaignsIndexRoute
+  '/_app/groups/': typeof AppGroupsIndexRoute
   '/_app/surveys/': typeof AppSurveysIndexRoute
   '/_app/alumni/$id_/edit': typeof AppAlumniIdEditRoute
   '/_app/campaigns/$id_/edit': typeof AppCampaignsIdEditRoute
@@ -218,12 +263,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/reset-password'
     | '/dashboard'
     | '/mentorship'
     | '/alumni/$id'
+    | '/alumni/import'
     | '/alumni/new'
     | '/campaigns/$id'
     | '/campaigns/new'
+    | '/groups/$id'
+    | '/groups/new'
     | '/settings/audit-log'
     | '/settings/help-content'
     | '/settings/users'
@@ -232,6 +281,7 @@ export interface FileRouteTypes {
     | '/survey/respond/$token'
     | '/alumni/'
     | '/campaigns/'
+    | '/groups/'
     | '/surveys/'
     | '/alumni/$id/edit'
     | '/campaigns/$id/edit'
@@ -241,12 +291,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/reset-password'
     | '/dashboard'
     | '/mentorship'
     | '/alumni/$id'
+    | '/alumni/import'
     | '/alumni/new'
     | '/campaigns/$id'
     | '/campaigns/new'
+    | '/groups/$id'
+    | '/groups/new'
     | '/settings/audit-log'
     | '/settings/help-content'
     | '/settings/users'
@@ -255,6 +309,7 @@ export interface FileRouteTypes {
     | '/survey/respond/$token'
     | '/alumni'
     | '/campaigns'
+    | '/groups'
     | '/surveys'
     | '/alumni/$id/edit'
     | '/campaigns/$id/edit'
@@ -265,12 +320,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/reset-password'
     | '/_app/dashboard'
     | '/_app/mentorship'
     | '/_app/alumni/$id'
+    | '/_app/alumni/import'
     | '/_app/alumni/new'
     | '/_app/campaigns/$id'
     | '/_app/campaigns/new'
+    | '/_app/groups/$id'
+    | '/_app/groups/new'
     | '/_app/settings/audit-log'
     | '/_app/settings/help-content'
     | '/_app/settings/users'
@@ -279,6 +338,7 @@ export interface FileRouteTypes {
     | '/survey/respond/$token'
     | '/_app/alumni/'
     | '/_app/campaigns/'
+    | '/_app/groups/'
     | '/_app/surveys/'
     | '/_app/alumni/$id_/edit'
     | '/_app/campaigns/$id_/edit'
@@ -290,11 +350,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SurveyRespondTokenRoute: typeof SurveyRespondTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -335,6 +403,13 @@ declare module '@tanstack/react-router' {
       path: '/surveys'
       fullPath: '/surveys/'
       preLoaderRoute: typeof AppSurveysIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/groups/': {
+      id: '/_app/groups/'
+      path: '/groups'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof AppGroupsIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/campaigns/': {
@@ -393,6 +468,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAuditLogRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/groups/new': {
+      id: '/_app/groups/new'
+      path: '/groups/new'
+      fullPath: '/groups/new'
+      preLoaderRoute: typeof AppGroupsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/groups/$id': {
+      id: '/_app/groups/$id'
+      path: '/groups/$id'
+      fullPath: '/groups/$id'
+      preLoaderRoute: typeof AppGroupsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/campaigns/new': {
       id: '/_app/campaigns/new'
       path: '/campaigns/new'
@@ -412,6 +501,13 @@ declare module '@tanstack/react-router' {
       path: '/alumni/new'
       fullPath: '/alumni/new'
       preLoaderRoute: typeof AppAlumniNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/alumni/import': {
+      id: '/_app/alumni/import'
+      path: '/alumni/import'
+      fullPath: '/alumni/import'
+      preLoaderRoute: typeof AppAlumniImportRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/alumni/$id': {
@@ -456,9 +552,12 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppMentorshipRoute: typeof AppMentorshipRoute
   AppAlumniIdRoute: typeof AppAlumniIdRoute
+  AppAlumniImportRoute: typeof AppAlumniImportRoute
   AppAlumniNewRoute: typeof AppAlumniNewRoute
   AppCampaignsIdRoute: typeof AppCampaignsIdRoute
   AppCampaignsNewRoute: typeof AppCampaignsNewRoute
+  AppGroupsIdRoute: typeof AppGroupsIdRoute
+  AppGroupsNewRoute: typeof AppGroupsNewRoute
   AppSettingsAuditLogRoute: typeof AppSettingsAuditLogRoute
   AppSettingsHelpContentRoute: typeof AppSettingsHelpContentRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
@@ -466,6 +565,7 @@ interface AppRouteChildren {
   AppSurveysNewRoute: typeof AppSurveysNewRoute
   AppAlumniIndexRoute: typeof AppAlumniIndexRoute
   AppCampaignsIndexRoute: typeof AppCampaignsIndexRoute
+  AppGroupsIndexRoute: typeof AppGroupsIndexRoute
   AppSurveysIndexRoute: typeof AppSurveysIndexRoute
   AppAlumniIdEditRoute: typeof AppAlumniIdEditRoute
   AppCampaignsIdEditRoute: typeof AppCampaignsIdEditRoute
@@ -477,9 +577,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppMentorshipRoute: AppMentorshipRoute,
   AppAlumniIdRoute: AppAlumniIdRoute,
+  AppAlumniImportRoute: AppAlumniImportRoute,
   AppAlumniNewRoute: AppAlumniNewRoute,
   AppCampaignsIdRoute: AppCampaignsIdRoute,
   AppCampaignsNewRoute: AppCampaignsNewRoute,
+  AppGroupsIdRoute: AppGroupsIdRoute,
+  AppGroupsNewRoute: AppGroupsNewRoute,
   AppSettingsAuditLogRoute: AppSettingsAuditLogRoute,
   AppSettingsHelpContentRoute: AppSettingsHelpContentRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
@@ -487,6 +590,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSurveysNewRoute: AppSurveysNewRoute,
   AppAlumniIndexRoute: AppAlumniIndexRoute,
   AppCampaignsIndexRoute: AppCampaignsIndexRoute,
+  AppGroupsIndexRoute: AppGroupsIndexRoute,
   AppSurveysIndexRoute: AppSurveysIndexRoute,
   AppAlumniIdEditRoute: AppAlumniIdEditRoute,
   AppCampaignsIdEditRoute: AppCampaignsIdEditRoute,
@@ -500,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SurveyRespondTokenRoute: SurveyRespondTokenRoute,
 }
 export const routeTree = rootRouteImport

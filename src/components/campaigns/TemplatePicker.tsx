@@ -26,9 +26,15 @@ const ICONS: Record<string, React.ElementType> = {
   "alumni-profile": UserCircle,
   "mentorship-interest": Users,
   "hiring-interest": UserPlus,
+  "student-support": GraduationCap,
+  "alumni-engagement": Star,
   // layouts
+  "mentorship-invite": Mail,
+  "hiring-outreach": Briefcase,
   newsletter: Newspaper,
   "networking-event": CalendarDays,
+  "career-panel": Mic,
+  "student-support-email": HandHeart,
 };
 
 function fieldHint(fields: string[]): string {

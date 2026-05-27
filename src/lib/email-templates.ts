@@ -34,10 +34,18 @@ export type EmailTemplate = {
 // Shared HTML blocks
 // ---------------------------------------------------------------------------
 
+const BASE_URL =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as { env?: { VITE_PUBLIC_HOST?: string } }).env?.VITE_PUBLIC_HOST) ||
+  (typeof process !== "undefined" && process.env?.PUBLIC_HOST) ||
+  "";
+
+const LOGO_SRC = `${BASE_URL}/uw-whitewater-logo.png`;
+
 const HEADER = `
-  <div style="background-color:#4B2E83;padding:28px 40px;">
-    <div style="font-size:17px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">UW–Whitewater</div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.72);margin-top:3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;letter-spacing:0.3px;">Computer Science Department</div>
+  <div style="background-color:#4B2E83;padding:24px 40px;">
+    <img src="${LOGO_SRC}" alt="University of Wisconsin-Whitewater" width="200" height="auto" style="display:block;height:auto;filter:brightness(0)invert(1);max-width:200px;" />
+    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;letter-spacing:0.4px;text-transform:uppercase;">Computer Science Department</div>
   </div>`.trim();
 
 const FOOTER = `
@@ -407,23 +415,21 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
   {
     id: "mentorship-interest",
     category: "bundle",
-    name: "Mentorship & Student Support",
-    description:
-      "Find alumni who can mentor, review resumes, speak in class, or help with interviews.",
+    name: "Mentorship Interest",
+    description: "Identify which alumni want to mentor students and understand their preferences.",
     campaignType: "survey",
-    campaignName: "Mentorship & Student Support Survey",
-    subject: "Could you support UWW CS students, {{first_name}}?",
-    body: studentSupportBody,
-    suggestedSurveyTitle: "Student Support",
+    campaignName: "Mentorship Interest Survey",
+    subject: "Would you mentor a UWW CS student, {{first_name}}?",
+    body: mentorshipInterestBody,
+    suggestedSurveyTitle: "Mentorship",
     defaultFilters: { mentorshipOnly: false },
     surveyFields: [
-      "Open to mentoring",
+      "Willing to mentor",
       "Mentorship topics",
-      "Resume reviews",
-      "Mock interviews",
-      "Guest speaking",
-      "Workshop or project support",
+      "Preferred format",
       "Availability",
+      "Student level preference",
+      "Open to coffee chats",
     ],
     placeholders: [
       { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
@@ -464,6 +470,104 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     ],
   },
   {
+    id: "student-support",
+    category: "bundle",
+    name: "Student Support",
+    description:
+      "Find alumni who can review resumes, run mock interviews, speak in class, or lead workshops.",
+    campaignType: "survey",
+    campaignName: "Student Support Survey",
+    subject: "Can UWW CS students count on you, {{first_name}}?",
+    body: studentSupportBody,
+    suggestedSurveyTitle: "Student Support",
+    surveyFields: [
+      "Resume reviews",
+      "Mock interviews",
+      "Guest speaking",
+      "Workshops",
+      "Project mentorship",
+      "Networking introductions",
+    ],
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      {
+        key: "{{survey_link}}",
+        label: "Unique survey link",
+        mode: "auto",
+        example: "https://app.com/survey/respond/abc123",
+      },
+    ],
+  },
+  {
+    id: "alumni-engagement",
+    category: "bundle",
+    name: "Alumni Engagement",
+    description:
+      "Learn how alumni want to stay connected — events, speaking, networking, and more.",
+    campaignType: "survey",
+    campaignName: "Alumni Engagement Survey",
+    subject: "How would you like to stay connected, {{first_name}}?",
+    body: alumniEngagementBody,
+    suggestedSurveyTitle: "Engagement",
+    surveyFields: [
+      "Event interest",
+      "Speaking interest",
+      "Networking",
+      "Department involvement",
+      "Donations / sponsorship",
+    ],
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      {
+        key: "{{survey_link}}",
+        label: "Unique survey link",
+        mode: "auto",
+        example: "https://app.com/survey/respond/abc123",
+      },
+    ],
+  },
+  {
+    id: "mentorship-invite",
+    category: "layout",
+    name: "Mentorship Invitation",
+    campaignName: "Mentorship Invitation",
+    description: "Invite alumni to sign up as mentors — no survey needed, just a direct ask.",
+    campaignType: "email",
+    subject: "Help shape the next generation of CS graduates, {{first_name}}",
+    body: mentorshipInviteBody,
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      { key: "{{graduation_year}}", label: "Graduation year", mode: "auto", example: "2020" },
+      {
+        key: "[[signup_url]]",
+        label: "Sign-up URL",
+        mode: "manual",
+        example: "https://uww.edu/mentor-signup",
+      },
+    ],
+  },
+  {
+    id: "hiring-outreach",
+    category: "layout",
+    name: "Hiring Outreach",
+    campaignName: "Hiring Outreach",
+    description:
+      "Ask alumni whether their company is hiring and if they can refer graduating students.",
+    campaignType: "email",
+    subject: "UWW CS graduates are ready — is your company hiring?",
+    body: hiringOutreachBody,
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      { key: "{{graduation_year}}", label: "Graduation year", mode: "auto", example: "2020" },
+      {
+        key: "[[job_url]]",
+        label: "Job listing URL",
+        mode: "manual",
+        example: "https://company.com/careers",
+      },
+    ],
+  },
+  {
     id: "newsletter",
     category: "layout",
     name: "Newsletter / Department Update",
@@ -499,6 +603,65 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
       },
       { key: "[[Location]]", label: "Location", mode: "manual", example: "Hyland Hall 1101" },
       { key: "[[rsvp_url]]", label: "RSVP link", mode: "manual", example: "https://uww.edu/rsvp" },
+    ],
+  },
+  {
+    id: "career-panel",
+    category: "layout",
+    name: "Career Panel Invite",
+    campaignName: "Career Panel Invitation",
+    description:
+      "Invite alumni to speak on a student career panel — includes date and format fields.",
+    campaignType: "email",
+    subject: "Would you speak on our CS career panel, {{first_name}}?",
+    body: careerPanelBody,
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      { key: "[[Date]]", label: "Panel date", mode: "manual", example: "March 12, 2026" },
+      {
+        key: "[[Date & Time]]",
+        label: "Date and time",
+        mode: "manual",
+        example: "March 12 · 4–5 PM",
+      },
+      {
+        key: "[[In-person / Virtual]]",
+        label: "Format",
+        mode: "manual",
+        example: "Virtual (Zoom)",
+      },
+      {
+        key: "[[e.g., Junior and senior CS students]]",
+        label: "Audience",
+        mode: "manual",
+        example: "Junior and senior CS students",
+      },
+      {
+        key: "[[reply_url]]",
+        label: "Reply / sign-up link",
+        mode: "manual",
+        example: "https://uww.edu/panel-signup",
+      },
+    ],
+  },
+  {
+    id: "student-support-email",
+    category: "layout",
+    name: "Student Support Request",
+    campaignName: "Student Support Request",
+    description:
+      "Ask alumni to volunteer for resume reviews, mock interviews, guest talks, or workshops.",
+    campaignType: "email",
+    subject: "UWW CS students could use your expertise, {{first_name}}",
+    body: studentSupportEmailBody,
+    placeholders: [
+      { key: "{{first_name}}", label: "First name", mode: "auto", example: "Jordan" },
+      {
+        key: "[[signup_url]]",
+        label: "Sign-up URL",
+        mode: "manual",
+        example: "https://uww.edu/support-signup",
+      },
     ],
   },
 ];

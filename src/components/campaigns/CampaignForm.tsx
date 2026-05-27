@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -31,6 +30,7 @@ import {
 } from "@/lib/campaigns.functions";
 import { listSurveys, type SurveyListItem } from "@/lib/surveys.functions";
 import { listAlumni } from "@/lib/alumni.functions";
+import { listGroups } from "@/lib/groups.functions";
 import { type EmailTemplate, AUTO_PLACEHOLDERS } from "@/lib/email-templates";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
@@ -176,6 +176,7 @@ export function CampaignForm({
   );
   const [tags, setTags] = useState<string[]>(initial?.filter_tags ?? []);
   const [years, setYears] = useState<number[]>(initial?.filter_grad_years ?? []);
+  const [groupIds, setGroupIds] = useState<string[]>(initial?.filter_group_ids ?? []);
 
   const listAlumniFn = useServerFn(listAlumni);
   const { data: alumniData } = useQuery({
@@ -189,6 +190,14 @@ export function CampaignForm({
     return Array.from(new Set(ys)).sort((a, b) => b - a);
   }, [alumniData]);
 
+  const listGroupsFn = useServerFn(listGroups);
+  const { data: groupsData } = useQuery({
+    queryKey: ["groups"],
+    queryFn: () => listGroupsFn(),
+    enabled: !!user,
+  });
+  const allGroups = groupsData?.groups ?? [];
+
   const listSurveysFn = useServerFn(listSurveys);
   const { data: surveysData, isLoading: surveysLoading } = useQuery({
     queryKey: ["surveys"],
@@ -201,7 +210,7 @@ export function CampaignForm({
   useEffect(() => {
     let cancelled = false;
     previewFn({
-      data: { filter_mentorship_only: mentorOnly, filter_tags: tags, filter_grad_years: years },
+      data: { filter_mentorship_only: mentorOnly, filter_tags: tags, filter_grad_years: years, filter_group_ids: groupIds },
     })
       .then((r) => {
         if (!cancelled) setMatched(r.count);
@@ -210,7 +219,7 @@ export function CampaignForm({
     return () => {
       cancelled = true;
     };
-  }, [mentorOnly, tags, years, previewFn]);
+  }, [mentorOnly, tags, years, groupIds, previewFn]);
 
   const {
     register,
@@ -283,6 +292,7 @@ export function CampaignForm({
         filter_mentorship_only: mentorOnly,
         filter_tags: tags,
         filter_grad_years: years,
+        filter_group_ids: groupIds,
       };
       if (mode === "edit" && initial) {
         return updateFn({ data: { id: initial.id, ...payload } });
@@ -479,70 +489,195 @@ export function CampaignForm({
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-4">
-              <Card className="bg-muted/20 p-5 shadow-none">
-                <div className="font-medium">Audience filters</div>
-                <div className="mt-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Mentorship only</Label>
-                    <Switch checked={mentorOnly} onCheckedChange={setMentorOnly} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Tags
-                    </Label>
-                    <div className="space-y-1">
-                      {TAG_OPTIONS.map((t) => (
-                        <label key={t} className="flex cursor-pointer items-center gap-2 text-sm">
-                          <Checkbox
-                            checked={tags.includes(t)}
-                            onCheckedChange={(c) =>
-                              setTags(c ? [...tags, t] : tags.filter((x) => x !== t))
-                            }
-                          />
-                          {t}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Graduation years
-                    </Label>
-                    <div className="max-h-40 space-y-1 overflow-auto pr-1">
-                      {allYears.length === 0 && (
-                        <p className="text-xs text-muted-foreground">No graduation years yet.</p>
+            {(() => {
+              const activeFilterCount =
+                (mentorOnly ? 1 : 0) +
+                (tags.length > 0 ? 1 : 0) +
+                (years.length > 0 ? 1 : 0) +
+                (groupIds.length > 0 ? 1 : 0);
+              const clearAll = () => {
+                setMentorOnly(false);
+                setTags([]);
+                setYears([]);
+                setGroupIds([]);
+              };
+              return (
+                <div className="space-y-3">
+                  {/* Audience filters */}
+                  <Card className="shadow-none overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
+                      <span className="font-medium text-sm">Audience</span>
+                      {activeFilterCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearAll}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Clear all
+                        </button>
                       )}
-                      {allYears.map((y) => (
-                        <label key={y} className="flex cursor-pointer items-center gap-2 text-sm">
-                          <Checkbox
-                            checked={years.includes(y)}
-                            onCheckedChange={(c) =>
-                              setYears(c ? [...years, y] : years.filter((x) => x !== y))
-                            }
-                          />
-                          {y}
-                        </label>
-                      ))}
                     </div>
-                  </div>
-                </div>
-              </Card>
 
-              <Card className="bg-accent p-5 shadow-none">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Recipients matching filters
-                </div>
-                <div className="mt-1 text-3xl font-semibold">{matched}</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Excludes archived alumni and rows with missing emails.
-                </p>
-              </Card>
+                    <div className="divide-y divide-border/60">
+                      {/* Mentors only */}
+                      <div className="flex items-center justify-between px-5 py-4">
+                        <div>
+                          <div className="text-sm font-medium">Mentors only</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Alumni flagged as mentors
+                          </div>
+                        </div>
+                        <Switch checked={mentorOnly} onCheckedChange={setMentorOnly} />
+                      </div>
 
-              {mode === "create" && templateOverride?.surveyFields && templateOverride.surveyFields.length > 0 && (
-                <SurveyFieldsChecklist fields={templateOverride.surveyFields} />
-              )}
-            </div>
+                      {/* Tags */}
+                      <div className="px-5 py-4 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            Tags
+                          </span>
+                          {tags.length > 0 && (
+                            <span className="text-[11px] text-primary font-medium">
+                              {tags.length} selected
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {TAG_OPTIONS.map((t) => {
+                            const active = tags.includes(t);
+                            return (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() =>
+                                  setTags(active ? tags.filter((x) => x !== t) : [...tags, t])
+                                }
+                                className={cn(
+                                  "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all",
+                                  active
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                                )}
+                              >
+                                {t}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Graduation years */}
+                      <div className="px-5 py-4 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            Graduation year
+                          </span>
+                          {years.length > 0 && (
+                            <span className="text-[11px] text-primary font-medium">
+                              {years.length} selected
+                            </span>
+                          )}
+                        </div>
+                        {allYears.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No data yet.</p>
+                        ) : (
+                          <div className="grid grid-cols-4 gap-1">
+                            {allYears.map((y) => {
+                              const active = years.includes(y);
+                              return (
+                                <button
+                                  key={y}
+                                  type="button"
+                                  onClick={() =>
+                                    setYears(
+                                      active ? years.filter((x) => x !== y) : [...years, y],
+                                    )
+                                  }
+                                  className={cn(
+                                    "w-full rounded-md border py-1.5 font-mono text-xs font-medium transition-all",
+                                    active
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border bg-transparent text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                                  )}
+                                >
+                                  {y}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Groups */}
+                      {allGroups.length > 0 && (
+                        <div className="px-5 py-4 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                              Groups
+                            </span>
+                            {groupIds.length > 0 && (
+                              <span className="text-[11px] text-primary font-medium">
+                                {groupIds.length} selected
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            {allGroups.map((g) => {
+                              const active = groupIds.includes(g.id);
+                              return (
+                                <button
+                                  key={g.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setGroupIds(
+                                      active
+                                        ? groupIds.filter((x) => x !== g.id)
+                                        : [...groupIds, g.id],
+                                    )
+                                  }
+                                  className={cn(
+                                    "flex w-full items-center justify-between rounded-md border px-3 py-2 transition-all",
+                                    active
+                                      ? "border-primary/25 bg-primary/10 text-primary"
+                                      : "border-border/60 bg-transparent text-foreground hover:border-border hover:bg-muted/40",
+                                  )}
+                                >
+                                  <span className="truncate text-sm font-medium">{g.name}</span>
+                                  <span className="ml-2 shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
+                                    {g.member_count}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+
+                  {/* Recipients count */}
+                  <Card className="shadow-none">
+                    <div className="px-5 py-5 text-center">
+                      <div className="text-4xl font-bold tabular-nums tracking-tight">
+                        {matched}
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {activeFilterCount === 0 ? "active alumni" : "match your filters"}
+                      </div>
+                      <div className="mt-2 text-[11px] text-muted-foreground/60">
+                        Excludes archived and missing emails
+                      </div>
+                    </div>
+                  </Card>
+
+                  {mode === "create" &&
+                    templateOverride?.surveyFields &&
+                    templateOverride.surveyFields.length > 0 && (
+                      <SurveyFieldsChecklist fields={templateOverride.surveyFields} />
+                    )}
+                </div>
+              );
+            })()}
           </CardContent>
 
           <CardFooter className="justify-end gap-2 border-t border-border/70 pt-6">

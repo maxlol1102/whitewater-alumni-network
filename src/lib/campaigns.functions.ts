@@ -20,6 +20,7 @@ export type CampaignRow = {
   filter_mentorship_only: boolean;
   filter_tags: string[];
   filter_grad_years: number[];
+  filter_group_ids: string[];
   recipient_count: number;
   sent_at: string | null;
   created_at: string;
@@ -44,6 +45,7 @@ const FiltersSchema = z.object({
   filter_mentorship_only: z.boolean().default(false),
   filter_tags: z.array(z.string().max(80)).max(50).default([]),
   filter_grad_years: z.array(z.number().int().min(1950).max(2100)).max(100).default([]),
+  filter_group_ids: z.array(z.string().uuid()).max(50).default([]),
 });
 
 const CampaignInputSchema = z
@@ -60,11 +62,25 @@ const CampaignInputSchema = z
 
 const IdSchema = z.object({ id: z.string().uuid() });
 
+async function resolveGroupAlumniIds(groupIds: string[]): Promise<string[] | null> {
+  if (!groupIds.length) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin as any)
+    .from("alumni_groups")
+    .select("alumni_id")
+    .in("group_id", groupIds);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: { alumni_id: string }) => r.alumni_id);
+}
+
 async function countRecipients(filters: z.infer<typeof FiltersSchema>): Promise<number> {
+  const groupAlumniIds = await resolveGroupAlumniIds(filters.filter_group_ids);
+  if (groupAlumniIds !== null && groupAlumniIds.length === 0) return 0;
   let q = supabaseAdmin.from("alumni").select("id", { count: "exact", head: true }).eq("archived", false);
   if (filters.filter_mentorship_only) q = q.eq("mentorship_interest", true);
   if (filters.filter_tags.length) q = q.overlaps("tags", filters.filter_tags);
   if (filters.filter_grad_years.length) q = q.in("graduation_year", filters.filter_grad_years);
+  if (groupAlumniIds !== null) q = q.in("id", groupAlumniIds);
   const { count, error } = await q;
   if (error) throw new Error(error.message);
   return count ?? 0;
@@ -73,10 +89,13 @@ async function countRecipients(filters: z.infer<typeof FiltersSchema>): Promise<
 async function getRecipients(
   filters: z.infer<typeof FiltersSchema>,
 ): Promise<{ id: string; email: string; name: string; graduation_year: number | null }[]> {
+  const groupAlumniIds = await resolveGroupAlumniIds(filters.filter_group_ids);
+  if (groupAlumniIds !== null && groupAlumniIds.length === 0) return [];
   let q = supabaseAdmin.from("alumni").select("id, email, full_name, graduation_year").eq("archived", false);
   if (filters.filter_mentorship_only) q = q.eq("mentorship_interest", true);
   if (filters.filter_tags.length) q = q.overlaps("tags", filters.filter_tags);
   if (filters.filter_grad_years.length) q = q.in("graduation_year", filters.filter_grad_years);
+  if (groupAlumniIds !== null) q = q.in("id", groupAlumniIds);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return (data ?? []).map((r) => ({
@@ -183,6 +202,7 @@ export const createCampaign = createServerFn({ method: "POST" })
       filter_mentorship_only: data.filter_mentorship_only,
       filter_tags: data.filter_tags,
       filter_grad_years: data.filter_grad_years,
+      filter_group_ids: data.filter_group_ids,
       status: "draft",
       recipient_count,
       created_by: userId,
@@ -248,6 +268,7 @@ export const updateCampaign = createServerFn({ method: "POST" })
       filter_mentorship_only: data.filter_mentorship_only,
       filter_tags: data.filter_tags,
       filter_grad_years: data.filter_grad_years,
+      filter_group_ids: data.filter_group_ids,
       recipient_count,
     };
     const { data: updated, error } = await supabaseAdmin
@@ -326,6 +347,7 @@ export const sendCampaign = createServerFn({ method: "POST" })
         filter_mentorship_only: before.filter_mentorship_only,
         filter_tags: before.filter_tags ?? [],
         filter_grad_years: before.filter_grad_years ?? [],
+        filter_group_ids: (before as CampaignRow).filter_group_ids ?? [],
       });
 
       const emailBatch = recipients.map((r) => ({
@@ -399,6 +421,7 @@ async function sendSurveyCampaign({
     filter_mentorship_only: before.filter_mentorship_only,
     filter_tags: before.filter_tags ?? [],
     filter_grad_years: before.filter_grad_years ?? [],
+    filter_group_ids: (before as CampaignRow).filter_group_ids ?? [],
   });
 
   // Generate a unique token per recipient

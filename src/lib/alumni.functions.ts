@@ -74,22 +74,52 @@ function normalize(input: z.infer<typeof AlumniInputSchema>) {
 }
 
 // ─── List ────────────────────────────────────────────────────────────────
-const ListSchema = z
-  .object({
-    includeArchived: z.boolean().optional(),
-  })
-  .optional();
+const ListSchema = z.object({
+  q: z.string().optional(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(10).max(100).default(25),
+  years: z.array(z.number().int()).optional(),
+  industries: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  mentorOnly: z.boolean().optional(),
+  includeArchived: z.boolean().optional(),
+});
 
 export const listAlumni = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => ListSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    let query = supabase.from("alumni").select("*").order("created_at", { ascending: false });
-    if (!data?.includeArchived) query = query.eq("archived", false);
-    const { data: rows, error } = await query;
+    const { q, page, pageSize, years, industries, tags, mentorOnly, includeArchived } = data;
+
+    let query = supabase
+      .from("alumni")
+      .select("*", { count: "exact" })
+      .order("full_name", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (!includeArchived) query = query.eq("archived", false);
+
+    if (q?.trim()) {
+      const term = q.trim().replace(/[%_]/g, "\\$&");
+      query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%,company.ilike.%${term}%`);
+    }
+    if (years?.length) query = query.in("graduation_year", years);
+    if (industries?.length) query = query.in("industry", industries);
+    if (tags?.length) query = (query as any).overlaps("tags", tags);
+    if (mentorOnly) query = query.eq("mentorship_interest", true);
+
+    const from = (page - 1) * pageSize;
+    query = query.range(from, from + pageSize - 1);
+
+    const { data: rows, count, error } = await query;
     if (error) throw new Error(error.message);
-    return { alumni: (rows ?? []) as AlumniRow[] };
+    return {
+      alumni: (rows ?? []) as AlumniRow[],
+      total: count ?? 0,
+      page,
+      pageSize,
+    };
   });
 
 // ─── Get one ─────────────────────────────────────────────────────────────
@@ -224,6 +254,62 @@ export const deleteAlumni = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ─── Patch (inline table edits) ──────────────────────────────────────────
+const PatchSchema = z.object({
+  id: z.string().uuid(),
+  mentorship_interest: z.boolean().optional(),
+  tags: z.array(z.string().max(80)).max(50).optional(),
+});
+
+export const patchAlumni = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => PatchSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId, claims } = context;
+    await assertCallerIsAdmin(supabase, userId);
+    const { id, ...patch } = data;
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("alumni")
+      .update(patch)
+      .eq("id", id)
+      .select("id, full_name")
+      .single();
+    if (error) throw new Error(error.message);
+    await writeAudit({
+      actor_id: userId,
+      actor_email: (claims as { email?: string })?.email ?? null,
+      action: "alumni.updated",
+      entity_id: id,
+      entity_label: updated.full_name,
+      summary: `Updated alumni ${updated.full_name} (inline)`,
+      after: patch,
+    });
+    return { ok: true };
+  });
+
+// ─── Bulk Delete ─────────────────────────────────────────────────────────
+const BulkDeleteSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(500),
+});
+
+export const bulkDeleteAlumni = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => BulkDeleteSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId, claims } = context;
+    await assertCallerIsAdmin(supabase, userId);
+    const { error } = await supabaseAdmin.from("alumni").delete().in("id", data.ids);
+    if (error) throw new Error(error.message);
+    await writeAudit({
+      actor_id: userId,
+      actor_email: (claims as { email?: string })?.email ?? null,
+      action: "alumni.bulk_deleted",
+      summary: `Bulk deleted ${data.ids.length} alumni records`,
+      after: { count: data.ids.length },
+    });
+    return { ok: true, count: data.ids.length };
+  });
+
 // ─── CSV Import ──────────────────────────────────────────────────────────
 const CsvRowSchema = z.object({
   full_name: z.string().min(1).max(200),
@@ -280,20 +366,27 @@ export const importAlumniCsv = createServerFn({ method: "POST" })
       .in("email", emails);
     const existingSet = new Set((existing ?? []).map((r) => r.email));
 
-    const payload = valid.map((r) => ({
-      full_name: r.full_name,
-      email: r.email,
-      phone: r.phone || null,
-      linkedin_url: r.linkedin_url || null,
-      graduation_year: r.graduation_year ?? null,
-      degree_program: r.degree_program || null,
-      company: r.company || null,
-      job_title: r.job_title || null,
-      industry: r.industry || null,
-      location: r.location || null,
-    }));
+    const payload = valid.map((r) => {
+      // Always include required identity fields. For optional fields, only include
+      // them when the CSV actually had a value — omitting a field from the upsert
+      // payload leaves the existing DB value untouched, so a sparse CSV never
+      // silently blanks out data that was set through the profile form.
+      const row: Record<string, string | number | null> = {
+        full_name: r.full_name,
+        email: r.email,
+      };
+      if (r.phone) row.phone = r.phone;
+      if (r.linkedin_url) row.linkedin_url = r.linkedin_url;
+      if (r.graduation_year != null) row.graduation_year = r.graduation_year;
+      if (r.degree_program) row.degree_program = r.degree_program;
+      if (r.company) row.company = r.company;
+      if (r.job_title) row.job_title = r.job_title;
+      if (r.industry) row.industry = r.industry;
+      if (r.location) row.location = r.location;
+      return row;
+    });
 
-    const { error } = await supabaseAdmin
+    const { error } = await (supabaseAdmin as any)
       .from("alumni")
       .upsert(payload, { onConflict: "email" });
     if (error) throw new Error(error.message);

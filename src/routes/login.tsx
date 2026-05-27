@@ -25,14 +25,25 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+type Mode = "sign-in" | "forgot";
+
 function LoginPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<Mode>("sign-in");
+
+  // Sign-in state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Forgot-password state
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isActive(user)) navigate({ to: "/dashboard" });
@@ -54,9 +65,31 @@ function LoginPage() {
     void remember;
   }
 
+  async function sendReset(e: React.FormEvent) {
+    e.preventDefault();
+    setResetError(null);
+    setResetSubmitting(true);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetSubmitting(false);
+    if (err) {
+      setResetError(err.message);
+      return;
+    }
+    setResetSent(true);
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError(null);
+    setResetError(null);
+    setResetSent(false);
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      {/* Left — sign-in */}
+      {/* Left panel */}
       <div className="relative flex flex-col">
         <header className="px-6 sm:px-12 pt-8 flex justify-center">
           <Link to="/" aria-label="Go to landing page">
@@ -70,63 +103,144 @@ function LoginPage() {
 
         <div className="flex-1 grid place-items-center px-6 sm:px-12 py-12">
           <div className="w-full max-w-[400px]">
-            <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your account</p>
+            {/* ── Sign-in form ── */}
+            {mode === "sign-in" && (
+              <>
+                <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
+                <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your account</p>
 
-            <form onSubmit={submit} className="mt-8 space-y-5">
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
+                <form onSubmit={submit} className="mt-8 space-y-5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@uww.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </Label>
-                  <a href="#" className="text-sm text-primary hover:underline underline-offset-4">
-                    Forgot your password?
-                  </a>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium">
+                        Password
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => switchMode("forgot")}
+                        className="text-sm text-primary hover:underline underline-offset-4"
+                      >
+                        Forgot your password?
+                      </button>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
 
-              <label className="flex items-center gap-2 text-sm select-none">
-                <Checkbox
-                  checked={remember}
-                  onCheckedChange={(v) => setRemember(Boolean(v))}
-                  className="size-4"
-                />
-                Remember me on this device
-              </label>
+                  <label className="flex items-center gap-2 text-sm select-none">
+                    <Checkbox
+                      checked={remember}
+                      onCheckedChange={(v) => setRemember(Boolean(v))}
+                      className="size-4"
+                    />
+                    Remember me on this device
+                  </label>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+                  {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="w-full h-11 text-sm font-medium"
-              >
-                {submitting ? "Signing in…" : "Sign in"}
-              </Button>
-            </form>
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full h-11 text-sm font-medium"
+                  >
+                    {submitting ? "Signing in…" : "Sign in"}
+                  </Button>
+                </form>
+              </>
+            )}
+
+            {/* ── Forgot password form ── */}
+            {mode === "forgot" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => switchMode("sign-in")}
+                  className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Back to sign in
+                </button>
+
+                {resetSent ? (
+                  <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
+                    <div className="text-2xl mb-3">✉️</div>
+                    <h2 className="text-lg font-semibold">Check your email</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      We sent a password reset link to{" "}
+                      <strong className="text-foreground">{resetEmail}</strong>. Check your inbox
+                      and click the link to set a new password.
+                    </p>
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      Didn't receive it?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setResetSent(false)}
+                        className="text-primary hover:underline underline-offset-4"
+                      >
+                        Send again
+                      </button>
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="text-[28px] font-semibold tracking-tight">
+                      Reset your password
+                    </h1>
+                    <p className="mt-1.5 text-sm text-muted-foreground">
+                      Enter your email and we'll send you a reset link.
+                    </p>
+
+                    <form onSubmit={sendReset} className="mt-8 space-y-5">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="reset-email" className="text-sm font-medium">
+                          Email
+                        </Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="you@uww.edu"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                          className="h-11"
+                          autoFocus
+                        />
+                      </div>
+
+                      {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+
+                      <Button
+                        type="submit"
+                        disabled={resetSubmitting}
+                        className="w-full h-11 text-sm font-medium"
+                      >
+                        {resetSubmitting ? "Sending…" : "Send reset link"}
+                      </Button>
+                    </form>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
