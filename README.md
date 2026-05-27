@@ -35,27 +35,6 @@ bun run dev
 
 Build: `bun run build` | Type check: `npx tsc --noEmit`
 
-### `.env`
-
-```env
-SUPABASE_URL=https://lahnnjgugabyqtnkhtgd.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sb_publishable_pGuIrPp0zltwJ9v8-JjNQQ_slfgETJ5
-SUPABASE_SERVICE_ROLE_KEY=<from Supabase dashboard — never commit>
-
-VITE_SUPABASE_URL=https://lahnnjgugabyqtnkhtgd.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_pGuIrPp0zltwJ9v8-JjNQQ_slfgETJ5
-VITE_SUPABASE_PROJECT_ID=lahnnjgugabyqtnkhtgd
-
-RESEND_API_KEY=<Resend key — optional; app works without it, emails just aren't sent>
-```
-
-## Supabase
-
-| | |
-|---|---|
-| Project ID | `lahnnjgugabyqtnkhtgd` |
-| Dashboard | https://supabase.com/dashboard/project/lahnnjgugabyqtnkhtgd |
-
 Push a migration: `npx supabase db push`
 
 Regenerate TypeScript types after schema changes:
