@@ -1,11 +1,13 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Mail, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth, isActive } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -88,254 +90,156 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      {/* Left panel */}
-      <div className="relative flex flex-col">
-        <header className="px-6 sm:px-12 pt-8 flex justify-center">
-          <Link to="/" aria-label="Go to landing page">
-            <img
-              src="/uw-whitewater-logo.png"
-              alt="University of Wisconsin Whitewater"
-              className="h-auto w-[248px] sm:w-[293px]"
-            />
-          </Link>
-        </header>
+    <AuthShell>
+      {/* ── Sign-in ── */}
+      {mode === "sign-in" && (
+        <>
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your account</p>
+          </div>
 
-        <div className="flex-1 grid place-items-center px-6 sm:px-12 py-12">
-          <div className="w-full max-w-[400px]">
-            {/* ── Sign-in form ── */}
-            {mode === "sign-in" && (
-              <>
-                <h1 className="text-[28px] font-semibold tracking-tight">Welcome back</h1>
-                <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your account</p>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@uww.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-10"
+              />
+            </div>
 
-                <form onSubmit={submit} className="mt-8 space-y-5">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email" className="text-sm font-medium">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@uww.edu"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-sm font-medium">
-                        Password
-                      </Label>
-                      <button
-                        type="button"
-                        onClick={() => switchMode("forgot")}
-                        className="text-sm text-primary hover:underline underline-offset-4"
-                      >
-                        Forgot your password?
-                      </button>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="h-11"
-                    />
-                  </div>
-
-                  <label className="flex items-center gap-2 text-sm select-none">
-                    <Checkbox
-                      checked={remember}
-                      onCheckedChange={(v) => setRemember(Boolean(v))}
-                      className="size-4"
-                    />
-                    Remember me on this device
-                  </label>
-
-                  {error && <p className="text-sm text-destructive">{error}</p>}
-
-                  <Button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full h-11 text-sm font-medium"
-                  >
-                    {submitting ? "Signing in…" : "Sign in"}
-                  </Button>
-                </form>
-              </>
-            )}
-
-            {/* ── Forgot password form ── */}
-            {mode === "forgot" && (
-              <>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </Label>
                 <button
                   type="button"
-                  onClick={() => switchMode("sign-in")}
-                  className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => switchMode("forgot")}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  ← Back to sign in
+                  Forgot password?
                 </button>
-
-                {resetSent ? (
-                  <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
-                    <div className="text-2xl mb-3">✉️</div>
-                    <h2 className="text-lg font-semibold">Check your email</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      We sent a password reset link to{" "}
-                      <strong className="text-foreground">{resetEmail}</strong>. Check your inbox
-                      and click the link to set a new password.
-                    </p>
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Didn't receive it?{" "}
-                      <button
-                        type="button"
-                        onClick={() => setResetSent(false)}
-                        className="text-primary hover:underline underline-offset-4"
-                      >
-                        Send again
-                      </button>
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <h1 className="text-[28px] font-semibold tracking-tight">
-                      Reset your password
-                    </h1>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                      Enter your email and we'll send you a reset link.
-                    </p>
-
-                    <form onSubmit={sendReset} className="mt-8 space-y-5">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="reset-email" className="text-sm font-medium">
-                          Email
-                        </Label>
-                        <Input
-                          id="reset-email"
-                          type="email"
-                          placeholder="you@uww.edu"
-                          value={resetEmail}
-                          onChange={(e) => setResetEmail(e.target.value)}
-                          required
-                          className="h-11"
-                          autoFocus
-                        />
-                      </div>
-
-                      {resetError && <p className="text-sm text-destructive">{resetError}</p>}
-
-                      <Button
-                        type="submit"
-                        disabled={resetSubmitting}
-                        className="w-full h-11 text-sm font-medium"
-                      >
-                        {resetSubmitting ? "Sending…" : "Send reset link"}
-                      </Button>
-                    </form>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right — gradient artwork */}
-      <aside className="hidden lg:block relative overflow-hidden bg-surface-100">
-        <GradientArt />
-        <div className="absolute inset-0 flex items-center justify-center p-12">
-          <figure className="max-w-lg text-foreground/90">
-            <div className="text-5xl leading-none text-foreground/30 font-serif mb-4">“</div>
-            <blockquote className="text-2xl sm:text-[26px] font-medium tracking-tight leading-snug text-foreground">
-              A quiet, considered network for alumni, faculty, and students of UW–Whitewater
-              Computer Science — invitation-only, maintained by the Department.
-            </blockquote>
-            <figcaption className="mt-6 flex items-center gap-3">
-              <div className="size-9 rounded-full bg-foreground/10 grid place-items-center text-xs font-medium text-foreground/70">
-                CS
               </div>
-              <div className="text-sm text-foreground/70">Department of Computer Science</div>
-            </figcaption>
-          </figure>
-        </div>
-      </aside>
-    </div>
-  );
-}
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-10"
+              />
+            </div>
 
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path
-        fill="#4285F4"
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.56c2.08-1.92 3.28-4.74 3.28-8.1Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 23c2.97 0 5.46-.98 7.28-2.65l-3.56-2.77c-.99.66-2.26 1.06-3.72 1.06-2.86 0-5.29-1.93-6.15-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.85 14.11A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.35-2.11V7.05H2.18a11 11 0 0 0 0 9.9l3.67-2.84Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.65l3.15-3.15C17.46 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.05l3.67 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
-      />
-    </svg>
-  );
-}
+            <label className="flex items-center gap-2 text-sm select-none text-muted-foreground">
+              <Checkbox
+                checked={remember}
+                onCheckedChange={(v) => setRemember(Boolean(v))}
+                className="size-4"
+              />
+              Remember me
+            </label>
 
-function GradientArt() {
-  return (
-    <svg
-      className="absolute inset-0 h-full w-full"
-      viewBox="0 0 800 1000"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="oklch(0.85 0.12 280)" />
-          <stop offset="50%" stopColor="oklch(0.65 0.20 305)" />
-          <stop offset="100%" stopColor="oklch(0.55 0.22 330)" />
-        </linearGradient>
-        <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="oklch(0.78 0.16 60)" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="oklch(0.6 0.18 305)" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="g3" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="oklch(0.7 0.18 320)" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="oklch(0.9 0.08 250)" stopOpacity="0" />
-        </linearGradient>
-        <filter id="blur">
-          <feGaussianBlur stdDeviation="40" />
-        </filter>
-      </defs>
+            {error && (
+              <p className="rounded-md bg-destructive/8 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
 
-      <rect width="800" height="1000" fill="oklch(0.99 0.002 280)" />
+            <Button type="submit" disabled={submitting} className="w-full h-10 text-sm font-medium">
+              {submitting ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+        </>
+      )}
 
-      <g filter="url(#blur)">
-        <path d="M-100 250 Q 200 100 450 350 T 950 600 L 950 0 L -100 0 Z" fill="url(#g1)" />
-        <path d="M -50 700 Q 250 500 500 750 T 900 950 L 900 1050 L -50 1050 Z" fill="url(#g2)" />
-        <ellipse cx="550" cy="500" rx="280" ry="220" fill="url(#g3)" />
-        <ellipse cx="200" cy="850" rx="200" ry="160" fill="oklch(0.5 0.16 305)" opacity="0.35" />
-      </g>
+      {/* ── Forgot password ── */}
+      {mode === "forgot" && (
+        <>
+          <button
+            type="button"
+            onClick={() => switchMode("sign-in")}
+            className="mb-8 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            Back to sign in
+          </button>
 
-      {/* subtle grain overlay via dots */}
-      <g opacity="0.05">
-        <circle cx="100" cy="100" r="1.5" />
-        <circle cx="300" cy="200" r="1.5" />
-        <circle cx="500" cy="120" r="1.5" />
-        <circle cx="700" cy="300" r="1.5" />
-        <circle cx="200" cy="400" r="1.5" />
-        <circle cx="600" cy="500" r="1.5" />
-      </g>
-    </svg>
+          {resetSent ? (
+            <div className="space-y-5 text-center">
+              <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary/10">
+                <Mail className="size-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Check your email</h2>
+                <p className="mt-2 text-sm text-muted-foreground leading-6">
+                  We sent a reset link to{" "}
+                  <span className="font-medium text-foreground">{resetEmail}</span>. Click the link
+                  to set a new password.
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Didn't receive it?{" "}
+                <button
+                  type="button"
+                  onClick={() => setResetSent(false)}
+                  className="text-primary hover:underline underline-offset-4"
+                >
+                  Send again
+                </button>
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-8">
+                <h1 className="text-2xl font-semibold tracking-tight">Reset your password</h1>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  Enter your email and we'll send a reset link.
+                </p>
+              </div>
+
+              <form onSubmit={sendReset} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reset-email" className="text-sm font-medium">
+                    Email
+                  </Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="you@uww.edu"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                    className="h-10"
+                    autoFocus
+                  />
+                </div>
+
+                {resetError && (
+                  <p className="rounded-md bg-destructive/8 px-3 py-2 text-sm text-destructive">
+                    {resetError}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={resetSubmitting}
+                  className="w-full h-10 text-sm font-medium"
+                >
+                  {resetSubmitting ? "Sending…" : "Send reset link"}
+                </Button>
+              </form>
+            </>
+          )}
+        </>
+      )}
+    </AuthShell>
   );
 }
