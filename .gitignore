@@ -16,7 +16,10 @@ dist-ssr
 .nitro
 *.local
 
-# Wrangler / Cloudflare
+# Netlify generated edge functions (built at deploy time)
+netlify/edge-functions/
+
+# Wrangler / Cloudflare (legacy)
 .wrangler/
 .dev.vars
 
