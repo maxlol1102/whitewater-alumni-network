@@ -74,6 +74,10 @@ export default async function handler(request: Request, context: unknown) {
     return await normalizeCatastrophicSsrResponse(response);
   } catch (error) {
     console.error(error);
-    return brandedErrorResponse();
+    const msg = error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ""}` : String(error);
+    return new Response(
+      renderErrorPage() + `\n<!-- DEBUG: ${msg.replace(/-->/g, "-->")} -->`,
+      { status: 500, headers: { "content-type": "text/html; charset=utf-8" } },
+    );
   }
 }

@@ -1,13 +1,11 @@
 import { Resend } from "resend";
 
-const FROM = process.env.RESEND_FROM ?? "onboarding@resend.dev";
-
 export type EmailSendResult =
   | { sent: true }
   | { sent: false; reason: "not_configured" | "empty_recipients" };
 
 export function isEmailConfigured(): boolean {
-  return !!process.env.RESEND_API_KEY;
+  return !!process.env.RESEND_API_KEY && !!process.env.RESEND_FROM;
 }
 
 export async function sendBulkEmail({
@@ -22,6 +20,7 @@ export async function sendBulkEmail({
   if (recipients.length === 0) return { sent: false, reason: "empty_recipients" };
   if (!isEmailConfigured()) return { sent: false, reason: "not_configured" };
 
+  const FROM = process.env.RESEND_FROM!;
   const resend = new Resend(process.env.RESEND_API_KEY);
   const CHUNK = 100;
   for (let i = 0; i < recipients.length; i += CHUNK) {
@@ -41,6 +40,7 @@ export async function sendPersonalizedBatch(
   if (emails.length === 0) return { sent: false, reason: "empty_recipients" };
   if (!isEmailConfigured()) return { sent: false, reason: "not_configured" };
 
+  const FROM = process.env.RESEND_FROM!;
   const resend = new Resend(process.env.RESEND_API_KEY);
   const CHUNK = 100;
   for (let i = 0; i < emails.length; i += CHUNK) {
