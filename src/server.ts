@@ -66,7 +66,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
-// Netlify Edge Functions expect a plain async function as the default export.
+// Netlify Functions v2: route all requests through this function.
+export const config = { path: "/*" };
+
 export default async function handler(request: Request, context: unknown) {
   try {
     const entry = await getServerEntry();
