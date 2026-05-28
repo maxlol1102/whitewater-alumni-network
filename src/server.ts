@@ -66,8 +66,8 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
-// Netlify Functions v2: handle all routes except static assets served by CDN.
-export const config = { path: ["/*", "!/assets/*"] };
+// Netlify Functions v2: static assets in publish dir take precedence automatically.
+export const config = { path: "/*" };
 
 export default async function handler(request: Request, context: unknown) {
   try {
