@@ -66,10 +66,10 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
-// Netlify Functions v2: static assets in publish dir take precedence automatically.
+// Netlify Functions v2 config — static assets in publish dir take precedence.
 export const config = { path: "/*" };
 
-export default async function handler(request: Request, context: unknown) {
+async function handler(request: Request, context: unknown): Promise<Response> {
   try {
     const entry = await getServerEntry();
     const response = await entry.fetch(request, undefined, context);
@@ -83,3 +83,8 @@ export default async function handler(request: Request, context: unknown) {
     );
   }
 }
+
+// TanStack Start dev server calls module.default.fetch(request).
+// Netlify Functions v2 calls module.default(request, context).
+// Attaching .fetch to the function satisfies both conventions.
+export default Object.assign(handler, { fetch: handler });
