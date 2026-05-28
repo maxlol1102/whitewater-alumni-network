@@ -130,7 +130,7 @@ function getAppOrigin(): string {
   }
   const host = process.env.PUBLIC_HOST;
   if (host) return host.startsWith("http") ? host : `https://${host}`;
-  return "http://localhost:3000";
+  throw new Error("PUBLIC_HOST environment variable is not set — cannot generate email links.");
 }
 
 export const listCampaigns = createServerFn({ method: "GET" })

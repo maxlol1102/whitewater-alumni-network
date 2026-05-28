@@ -76,11 +76,7 @@ async function handler(request: Request, context: unknown): Promise<Response> {
     return await normalizeCatastrophicSsrResponse(response);
   } catch (error) {
     console.error(error);
-    const msg = error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ""}` : String(error);
-    return new Response(
-      renderErrorPage() + `\n<!-- DEBUG: ${msg.replace(/-->/g, "-->")} -->`,
-      { status: 500, headers: { "content-type": "text/html; charset=utf-8" } },
-    );
+    return brandedErrorResponse();
   }
 }
 

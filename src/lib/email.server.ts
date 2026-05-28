@@ -13,7 +13,7 @@ export async function sendBulkEmail({
   subject,
   html,
 }: {
-  recipients: { email: string; name: string }[];
+  recipients: { email: string }[];
   subject: string;
   html: string;
 }): Promise<EmailSendResult> {

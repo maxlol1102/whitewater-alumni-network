@@ -38,7 +38,7 @@ function SurveyDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   useEffect(() => {
-    if (user && user.account_role !== "admin") navigate({ to: "/dashboard" });
+    if (user && !canEdit(user)) navigate({ to: "/dashboard" });
   }, [user, navigate]);
   const canMutate = canEdit(user);
 
@@ -49,12 +49,12 @@ function SurveyDetail() {
   const { data: surveyData, isLoading } = useQuery({
     queryKey: ["survey", id],
     queryFn: () => getFn({ data: { id } }),
-    enabled: user?.account_role === "admin",
+    enabled: canEdit(user),
   });
   const { data: responsesData } = useQuery({
     queryKey: ["survey", id, "responses"],
     queryFn: () => listResponsesFn({ data: { survey_id: id } }),
-    enabled: user?.account_role === "admin",
+    enabled: canEdit(user),
   });
 
   const [confirmOpen, setConfirmOpen] = useState(false);

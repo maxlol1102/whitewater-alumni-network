@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGri
 import { Users, Handshake, Mail, ClipboardList } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/Page";
 import { getDashboardStats } from "@/lib/dashboard.functions";
+import { useAuth, isActive } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/dashboard")({
@@ -48,6 +50,12 @@ function ChartTooltip({
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (user && !isActive(user)) navigate({ to: "/login" });
+  }, [user, navigate]);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: () => getDashboardStats(),
