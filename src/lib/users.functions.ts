@@ -56,9 +56,17 @@ export const inviteUser = createServerFn({ method: "POST" })
 
     let newUserId: string;
     if (data.status === "invited") {
+      const appUrl = process.env.PUBLIC_HOST
+        ? process.env.PUBLIC_HOST.startsWith("http")
+          ? process.env.PUBLIC_HOST
+          : `https://${process.env.PUBLIC_HOST}`
+        : null;
       const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
         data.email,
-        { data: { full_name: data.full_name, user_category: data.user_category } },
+        {
+          data: { full_name: data.full_name, user_category: data.user_category },
+          ...(appUrl ? { redirectTo: `${appUrl}/reset-password` } : {}),
+        },
       );
       if (error || !invited.user) throw new Error(error?.message ?? "Failed to invite user");
       newUserId = invited.user.id;
@@ -197,7 +205,14 @@ export const resendInvite = createServerFn({ method: "POST" })
     if (target.status !== "invited") throw new Error("User is not in invited state.");
     const { data: user, error: getErr } = await supabaseAdmin.auth.admin.getUserById(data.id);
     if (getErr || !user.user?.email) throw new Error(getErr?.message ?? "User email not found");
-    const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(user.user.email);
+    const appUrl = process.env.PUBLIC_HOST
+      ? process.env.PUBLIC_HOST.startsWith("http")
+        ? process.env.PUBLIC_HOST
+        : `https://${process.env.PUBLIC_HOST}`
+      : null;
+    const { error } = await supabaseAdmin.auth.admin.inviteUserByEmail(user.user.email, {
+      ...(appUrl ? { redirectTo: `${appUrl}/reset-password` } : {}),
+    });
     if (error) throw new Error(error.message);
     await supabaseAdmin
       .from("profiles")
