@@ -79,6 +79,7 @@ const HEADER_ALIASES: Record<string, string> = {
   linkedin: "linkedin_url",
   linkedin_url: "linkedin_url",
   grad_year: "graduation_year",
+  "grad year": "graduation_year",
   "graduation year": "graduation_year",
   graduation_year: "graduation_year",
   year: "graduation_year",

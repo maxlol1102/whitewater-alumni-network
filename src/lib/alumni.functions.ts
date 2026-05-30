@@ -313,7 +313,10 @@ export const bulkDeleteAlumni = createServerFn({ method: "POST" })
 // ─── CSV Import ──────────────────────────────────────────────────────────
 const CsvRowSchema = z.object({
   full_name: z.string().min(1).max(200),
-  email: EmailSchema,
+  email: z.union([
+    z.string().email().max(255).transform((s) => s.toLowerCase().trim()),
+    z.null(),
+  ]),
   phone: z.string().max(50).optional().nullable(),
   linkedin_url: z.string().max(500).optional().nullable(),
   graduation_year: z.number().int().min(1950).max(currentYear + 5).optional().nullable(),
@@ -345,6 +348,7 @@ export const importAlumniCsv = createServerFn({ method: "POST" })
           raw.graduation_year === "" || raw.graduation_year == null
             ? null
             : Number(raw.graduation_year),
+        email: raw.email === "" || raw.email == null ? null : raw.email,
       };
       const parsed = CsvRowSchema.safeParse(coerced);
       if (!parsed.success) {
@@ -358,23 +362,30 @@ export const importAlumniCsv = createServerFn({ method: "POST" })
       return { inserted: 0, updated: 0, errors, total: data.rows.length };
     }
 
-    // Fetch existing emails to compute inserted vs updated.
-    const emails = valid.map((r) => r.email);
-    const { data: existing } = await supabaseAdmin
-      .from("alumni")
-      .select("email")
-      .in("email", emails);
-    const existingSet = new Set((existing ?? []).map((r) => r.email));
+    // Split: rows with email can be deduped and upserted; rows without email are always inserted.
+    const withEmailMap = new Map<string, z.infer<typeof CsvRowSchema>>();
+    const withoutEmail: z.infer<typeof CsvRowSchema>[] = [];
+    for (const r of valid) {
+      if (r.email) withEmailMap.set(r.email, r);
+      else withoutEmail.push(r);
+    }
+    const deduped = Array.from(withEmailMap.values());
 
-    const payload = valid.map((r) => {
-      // Always include required identity fields. For optional fields, only include
-      // them when the CSV actually had a value — omitting a field from the upsert
-      // payload leaves the existing DB value untouched, so a sparse CSV never
-      // silently blanks out data that was set through the profile form.
-      const row: Record<string, string | number | null> = {
-        full_name: r.full_name,
-        email: r.email,
-      };
+    // Fetch existing emails to compute inserted vs updated.
+    let existingSet = new Set<string>();
+    if (deduped.length > 0) {
+      const { data: existing } = await supabaseAdmin
+        .from("alumni")
+        .select("email")
+        .in("email", deduped.map((r) => r.email as string));
+      existingSet = new Set((existing ?? []).flatMap((r) => (r.email ? [r.email] : [])));
+    }
+
+    // For optional fields, only include them when the CSV had a value — omitting a field
+    // leaves the existing DB value untouched so a sparse CSV never blanks profile data.
+    const buildRow = (r: z.infer<typeof CsvRowSchema>) => {
+      const row: Record<string, string | number | null> = { full_name: r.full_name };
+      if (r.email) row.email = r.email;
       if (r.phone) row.phone = r.phone;
       if (r.linkedin_url) row.linkedin_url = r.linkedin_url;
       if (r.graduation_year != null) row.graduation_year = r.graduation_year;
@@ -384,15 +395,25 @@ export const importAlumniCsv = createServerFn({ method: "POST" })
       if (r.industry) row.industry = r.industry;
       if (r.location) row.location = r.location;
       return row;
-    });
+    };
 
-    const { error } = await (supabaseAdmin as any)
-      .from("alumni")
-      .upsert(payload, { onConflict: "email" });
-    if (error) throw new Error(error.message);
+    if (deduped.length > 0) {
+      const { error } = await (supabaseAdmin as any)
+        .from("alumni")
+        .upsert(deduped.map(buildRow), { onConflict: "email" });
+      if (error) throw new Error(error.message);
+    }
 
-    const inserted = valid.filter((r) => !existingSet.has(r.email)).length;
-    const updated = valid.length - inserted;
+    if (withoutEmail.length > 0) {
+      const { error } = await (supabaseAdmin as any)
+        .from("alumni")
+        .insert(withoutEmail.map(buildRow));
+      if (error) throw new Error(error.message);
+    }
+
+    const updatedCount = deduped.filter((r) => existingSet.has(r.email as string)).length;
+    const inserted = (deduped.length - updatedCount) + withoutEmail.length;
+    const updated = updatedCount;
 
     await writeAudit({
       actor_id: userId,
