@@ -22,6 +22,7 @@ type AuthCtx = {
   identity: IdentityKey | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -83,9 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  async function refreshProfile() {
+    const { data } = await supabase.auth.getSession();
+    const uid = data.session?.user?.id;
+    if (uid) {
+      const p = await fetchProfile(uid);
+      setUser(p);
+    }
+  }
+
   const identity = user ? identityOf(user) : null;
 
-  return <Ctx.Provider value={{ user, identity, loading, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, identity, loading, signOut, refreshProfile }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

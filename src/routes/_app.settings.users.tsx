@@ -296,7 +296,7 @@ function UsersPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge className={STATUS_STYLES[u.status]}>{u.status}</Badge>
+                    <Badge variant="outline" className={STATUS_STYLES[u.status]}>{u.status}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {fmtDate(u.invited_at)}
@@ -315,9 +315,7 @@ function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {isAdmin ? (
-                          <DropdownMenuItem disabled>Admin account is protected</DropdownMenuItem>
-                        ) : u.status === "invited" ? (
+                        {u.status === "invited" ? (
                           <>
                             <DropdownMenuItem
                               onClick={() => {
@@ -421,6 +419,7 @@ function UsersPage() {
         {editUser && (
           <EditUserDialog
             user={editUser}
+            isSelf={user.id === editUser.id}
             onSubmit={(p) => editM.mutate({ id: editUser.id, payload: p })}
             onCancel={() => setEditUser(null)}
           />

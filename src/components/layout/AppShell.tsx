@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
+import { UserAvatarMenu } from "./UserAvatarMenu";
 import { useAuth, canAccess, isActive } from "@/lib/auth";
 
 export function AppShell() {
@@ -30,6 +31,9 @@ export function AppShell() {
         <Outlet />
       </main>
       <CommandPalette open={open} onOpenChange={setOpen} />
+      <div className="fixed top-5 right-6 z-40">
+        <UserAvatarMenu />
+      </div>
     </div>
   );
 }

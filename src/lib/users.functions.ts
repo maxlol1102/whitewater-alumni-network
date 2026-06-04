@@ -39,7 +39,8 @@ export const listUsers = createServerFn({ method: "GET" })
 const InviteSchema = z.object({
   full_name: z.string().min(2).max(120),
   email: EmailSchema,
-  user_category: z.enum(["faculty", "student"]),
+  account_role: z.enum(["admin", "user"]).default("user"),
+  user_category: z.enum(["faculty", "student"]).nullable().optional(),
   status: z.enum(["invited", "active", "disabled"]),
 });
 
@@ -55,6 +56,10 @@ export const inviteUser = createServerFn({ method: "POST" })
     if (existing) throw new Error("A user with that email already exists.");
 
     let newUserId: string;
+    const userMeta = data.account_role === "admin"
+      ? { full_name: data.full_name }
+      : { full_name: data.full_name, user_category: data.user_category };
+
     if (data.status === "invited") {
       const appUrl = process.env.PUBLIC_HOST
         ? process.env.PUBLIC_HOST.startsWith("http")
@@ -64,7 +69,7 @@ export const inviteUser = createServerFn({ method: "POST" })
       const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
         data.email,
         {
-          data: { full_name: data.full_name, user_category: data.user_category },
+          data: userMeta,
           ...(appUrl ? { redirectTo: `${appUrl}/reset-password` } : {}),
         },
       );
@@ -77,7 +82,7 @@ export const inviteUser = createServerFn({ method: "POST" })
         email: data.email,
         password: tempPassword,
         email_confirm: true,
-        user_metadata: { full_name: data.full_name, user_category: data.user_category },
+        user_metadata: userMeta,
       });
       if (error || !created.user) throw new Error(error?.message ?? "Failed to create user");
       newUserId = created.user.id;
@@ -91,8 +96,8 @@ export const inviteUser = createServerFn({ method: "POST" })
         id: newUserId,
         email: data.email,
         full_name: data.full_name,
-        account_role: "user",
-        user_category: data.user_category,
+        account_role: data.account_role,
+        user_category: data.account_role === "admin" ? null : (data.user_category ?? "faculty"),
         status: data.status,
         invited_at: now,
         accepted_at: data.status === "active" ? now : null,
@@ -107,6 +112,7 @@ export const inviteUser = createServerFn({ method: "POST" })
 const UpdateSchema = z.object({
   id: z.string().uuid(),
   full_name: z.string().min(2).max(120),
+  account_role: z.enum(["admin", "user"]),
   user_category: z.enum(["faculty", "student"]).nullable(),
   status: z.enum(["invited", "active", "disabled"]),
 });
@@ -122,14 +128,14 @@ export const updateUser = createServerFn({ method: "POST" })
       .from("profiles").select("*").eq("id", data.id).maybeSingle();
     if (getErr) throw new Error(getErr.message);
     if (!target) throw new Error("User not found");
-    if (target.account_role === "admin") throw new Error("Admin account is protected.");
 
     const now = new Date().toISOString();
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({
         full_name: data.full_name,
-        user_category: data.user_category,
+        account_role: data.account_role,
+        user_category: data.account_role === "admin" ? null : data.user_category,
         status: data.status,
         disabled_at: data.status === "disabled" ? (target.disabled_at ?? now) : null,
         accepted_at: data.status === "active" && !target.accepted_at ? now : target.accepted_at,
@@ -142,12 +148,11 @@ export const updateUser = createServerFn({ method: "POST" })
 // ─── Status actions ──────────────────────────────────────────────────────
 const IdSchema = z.object({ id: z.string().uuid() });
 
-async function guardNonAdmin(id: string) {
+async function requireUserExists(id: string) {
   const { data, error } = await supabaseAdmin
     .from("profiles").select("account_role, email, status").eq("id", id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("User not found");
-  if (data.account_role === "admin") throw new Error("Admin account is protected.");
   return data;
 }
 
@@ -156,7 +161,7 @@ export const disableUser = createServerFn({ method: "POST" })
   .inputValidator((input) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    await guardNonAdmin(data.id);
+    await requireUserExists(data.id);
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({ status: "disabled", disabled_at: new Date().toISOString() })
@@ -170,7 +175,7 @@ export const reactivateUser = createServerFn({ method: "POST" })
   .inputValidator((input) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    await guardNonAdmin(data.id);
+    await requireUserExists(data.id);
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({ status: "active", disabled_at: null })
@@ -184,7 +189,7 @@ export const deleteUser = createServerFn({ method: "POST" })
   .inputValidator((input) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    await guardNonAdmin(data.id);
+    await requireUserExists(data.id);
     // Hard-delete the auth user; profile is cascade-deleted by FK (id → auth.users).
     const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(data.id);
     if (authErr) throw new Error(authErr.message);
@@ -201,7 +206,7 @@ export const resendInvite = createServerFn({ method: "POST" })
   .inputValidator((input) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const target = await guardNonAdmin(data.id);
+    const target = await requireUserExists(data.id);
     if (target.status !== "invited") throw new Error("User is not in invited state.");
     const { data: user, error: getErr } = await supabaseAdmin.auth.admin.getUserById(data.id);
     if (getErr || !user.user?.email) throw new Error(getErr?.message ?? "User email not found");
@@ -226,10 +231,25 @@ export const cancelInvite = createServerFn({ method: "POST" })
   .inputValidator((input) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const target = await guardNonAdmin(data.id);
+    const target = await requireUserExists(data.id);
     if (target.status !== "invited") throw new Error("User is not in invited state.");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
     if (error) throw new Error(error.message);
     await supabaseAdmin.from("profiles").delete().eq("id", data.id);
+    return { ok: true };
+  });
+
+// ─── Update own profile (any authenticated user) ──────────────────────────
+const MyProfileSchema = z.object({ full_name: z.string().min(2).max(120) });
+
+export const updateMyProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => MyProfileSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ full_name: data.full_name })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });

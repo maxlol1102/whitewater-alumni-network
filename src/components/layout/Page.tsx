@@ -42,7 +42,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "sticky top-0 z-20 -mx-10 px-10 pt-8 pb-6 mb-10 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75",
+        "sticky top-0 z-20 -mx-10 pl-10 pr-20 pt-8 pb-6 mb-10 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/75",
         className,
       )}
     >

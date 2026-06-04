@@ -83,6 +83,8 @@ const ListSchema = z.object({
   tags: z.array(z.string()).optional(),
   mentorOnly: z.boolean().optional(),
   includeArchived: z.boolean().optional(),
+  sortBy: z.enum(["full_name", "graduation_year"]).optional(),
+  sortDir: z.enum(["asc", "desc"]).optional(),
 });
 
 export const listAlumni = createServerFn({ method: "GET" })
@@ -90,12 +92,13 @@ export const listAlumni = createServerFn({ method: "GET" })
   .inputValidator((input) => ListSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { q, page, pageSize, years, industries, tags, mentorOnly, includeArchived } = data;
+    const { q, page, pageSize, years, industries, tags, mentorOnly, includeArchived, sortBy, sortDir } = data;
 
+    const ascending = sortDir !== "desc";
     let query = supabase
       .from("alumni")
       .select("*", { count: "exact" })
-      .order("full_name", { ascending: true })
+      .order(sortBy ?? "full_name", { ascending })
       .order("id", { ascending: true });
 
     if (!includeArchived) query = query.eq("archived", false);

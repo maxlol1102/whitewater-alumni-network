@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "@tanstack/react-router";
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { UserCategory, UserStatus } from "@/mocks";
+import type { AccountRole, UserCategory, UserStatus } from "@/mocks";
 import { inviteUser } from "@/lib/users.functions";
 import { toast } from "sonner";
 
@@ -25,14 +25,16 @@ const USER_FORM_ID = "user-form";
 const schema = z.object({
   full_name: z.string().min(2, "Full name is required."),
   email: z.string().email("Enter a valid email."),
-  user_category: z.enum(["faculty", "student"]),
+  account_role: z.enum(["admin", "user"]),
+  user_category: z.enum(["faculty", "student"]).nullable(),
   status: z.enum(["invited", "active", "disabled"]),
 });
 
 export type UserPayload = {
   full_name: string;
   email: string;
-  user_category: UserCategory;
+  account_role: AccountRole;
+  user_category: UserCategory | null;
   status: Extract<UserStatus, "invited" | "active" | "disabled">;
 };
 
@@ -46,20 +48,24 @@ export function UserForm() {
     defaultValues: {
       full_name: "",
       email: "",
+      account_role: "user",
       user_category: "faculty",
       status: "invited",
     },
   });
 
   const { isDirty } = form.formState;
+  const accountRole = useWatch({ control: form.control, name: "account_role" });
 
   const mutation = useMutation({
     mutationFn: (payload: UserPayload) =>
       invite({
         data: {
-          ...payload,
           full_name: payload.full_name.trim(),
           email: payload.email.trim().toLowerCase(),
+          account_role: payload.account_role,
+          user_category: payload.account_role === "admin" ? null : payload.user_category,
+          status: payload.status,
         },
       }),
     onSuccess: (_data, payload) => {
@@ -117,12 +123,12 @@ export function UserForm() {
               />
               <FormField
                 control={form.control}
-                name="user_category"
+                name="account_role"
                 render={({ field }) => (
                   <FormItemLayout
                     layout="flex-row-reverse"
-                    label="User category"
-                    description="Faculty and student users share the same non-admin access."
+                    label="Role"
+                    description="Admins have full access. Users have read-only access."
                   >
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
@@ -131,13 +137,38 @@ export function UserForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="faculty">Faculty</SelectItem>
-                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItemLayout>
                 )}
               />
+              {accountRole === "user" && (
+                <FormField
+                  control={form.control}
+                  name="user_category"
+                  render={({ field }) => (
+                    <FormItemLayout
+                      layout="flex-row-reverse"
+                      label="User category"
+                      description="Faculty and student users share the same non-admin access."
+                    >
+                      <Select value={field.value ?? "faculty"} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="faculty">Faculty</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItemLayout>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="status"

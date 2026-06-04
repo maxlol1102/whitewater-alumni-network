@@ -56,6 +56,9 @@ import {
   Pencil,
   Trash2,
   Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageContainer, PageHeader, EmptyState } from "@/components/layout/Page";
@@ -185,6 +188,11 @@ function AlumniList() {
   const [mentorOnly, setMentorOnly] = useState(false);
   const [yearSearch, setYearSearch] = useState("");
 
+  // ─ sort
+  type SortCol = "full_name" | "graduation_year";
+  const [sortBy, setSortBy] = useState<SortCol>("full_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
   // ─ pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSize>(25);
@@ -204,9 +212,18 @@ function AlumniList() {
     return () => clearTimeout(t);
   }, [q]);
 
-  useEffect(() => { setPage(1); }, [debouncedQ, years, industries, tags, mentorOnly, pageSize]);
+  useEffect(() => { setPage(1); }, [debouncedQ, years, industries, tags, mentorOnly, pageSize, sortBy, sortDir]);
 
-  const queryParams = { q: debouncedQ, page, pageSize, years, industries, tags, mentorOnly };
+  const queryParams = { q: debouncedQ, page, pageSize, years, industries, tags, mentorOnly, sortBy, sortDir };
+
+  function toggleSort(col: SortCol) {
+    if (sortBy === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(col);
+      setSortDir("asc");
+    }
+  }
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["alumni", queryParams],
@@ -690,11 +707,37 @@ function AlumniList() {
                   />
                 </TableHead>
               )}
-              <TableHead>Name</TableHead>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => toggleSort("full_name")}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  Name
+                  {sortBy === "full_name" ? (
+                    sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Job Title</TableHead>
-              <TableHead className="w-20">Grad Year</TableHead>
+              <TableHead className="w-20">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("graduation_year")}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  Grad Year
+                  {sortBy === "graduation_year" ? (
+                    sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </TableHead>
               <TableHead>Tags</TableHead>
               <TableHead className="w-16">{canMutate ? "Mentor" : "Mentorship"}</TableHead>
               <TableHead className="w-10" />

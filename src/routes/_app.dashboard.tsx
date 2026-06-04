@@ -140,7 +140,7 @@ function Dashboard() {
                 <BarChart
                   data={data.byYear}
                   barCategoryGap="32%"
-                  margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+                  margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid
                     vertical={false}
