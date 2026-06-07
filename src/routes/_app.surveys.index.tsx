@@ -57,20 +57,20 @@ function SurveysList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
+              <TableHead className="pl-9">Title</TableHead>
               <TableHead>Linked campaign</TableHead>
               <TableHead>Responses</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead className="pr-9">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell className="pl-6"><Skeleton className="h-4 w-40" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-56" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell className="pr-6"><Skeleton className="h-4 w-24" /></TableCell>
                 </TableRow>
               ))
             ) : surveys.length === 0 ? (
@@ -100,14 +100,14 @@ function SurveysList() {
                   className="cursor-pointer"
                   onClick={() => navigate({ to: "/surveys/$id", params: { id: s.id } })}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium pl-6">
                     <Link to="/surveys/$id" params={{ id: s.id }} className="hover:underline">
                       {s.title}
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{s.campaign_name ?? "—"}</TableCell>
                   <TableCell>{s.response_count}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground pr-6">
                     {new Date(s.created_at).toLocaleDateString()}
                   </TableCell>
                 </TableRow>

@@ -184,24 +184,24 @@ function GroupDetail() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="pl-9">Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Company</TableHead>
               <TableHead className="w-24">Grad year</TableHead>
-              <TableHead className="w-20">Mentor</TableHead>
-              {isAdmin && <TableHead className="w-12" />}
+              <TableHead className={`w-20${!isAdmin ? " pr-9" : ""}`}>Mentor</TableHead>
+              {isAdmin && <TableHead className="w-12 pr-6" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading &&
               Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="pl-6"><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-40" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                  {isAdmin && <TableCell />}
+                  <TableCell className={!isAdmin ? "pr-6" : ""}><Skeleton className="h-4 w-8" /></TableCell>
+                  {isAdmin && <TableCell className="pr-6" />}
                 </TableRow>
               ))}
 
@@ -225,7 +225,7 @@ function GroupDetail() {
             {!isLoading &&
               members.map((m) => (
                 <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.full_name}</TableCell>
+                  <TableCell className="font-medium pl-6">{m.full_name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{m.email}</TableCell>
                   <TableCell className="text-sm">
                     {m.job_title && m.company
@@ -233,13 +233,13 @@ function GroupDetail() {
                       : (m.company ?? m.job_title ?? <em className="text-muted-foreground/50">—</em>)}
                   </TableCell>
                   <TableCell className="text-sm">{m.graduation_year ?? "—"}</TableCell>
-                  <TableCell>
+                  <TableCell className={!isAdmin ? "pr-6" : ""}>
                     {m.mentorship_interest && (
                       <Badge variant="outline" className="text-[10px]">Mentor</Badge>
                     )}
                   </TableCell>
                   {isAdmin && (
-                    <TableCell>
+                    <TableCell className="pr-6">
                       <Button
                         variant="ghost"
                         size="icon"

@@ -62,24 +62,24 @@ function CampaignsList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="pl-9">Name</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Subject</TableHead>
               <TableHead>Recipients</TableHead>
-              <TableHead>Sent</TableHead>
+              <TableHead className="pr-9">Sent</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                  <TableCell className="pl-6"><Skeleton className="h-4 w-36" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell className="pr-6"><Skeleton className="h-4 w-24" /></TableCell>
                 </TableRow>
               ))
             ) : campaigns.length === 0 ? (
@@ -109,7 +109,7 @@ function CampaignsList() {
                   className="cursor-pointer"
                   onClick={() => navigate({ to: "/campaigns/$id", params: { id: c.id } })}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium pl-6">
                     <Link
                       to="/campaigns/$id"
                       params={{ id: c.id }}
@@ -131,7 +131,7 @@ function CampaignsList() {
                     {c.subject}
                   </TableCell>
                   <TableCell>{c.recipient_count}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground pr-6">
                     {c.sent_at ? new Date(c.sent_at).toLocaleDateString() : "—"}
                   </TableCell>
                 </TableRow>

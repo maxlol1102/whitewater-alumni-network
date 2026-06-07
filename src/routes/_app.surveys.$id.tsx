@@ -137,10 +137,10 @@ function SurveyDetail() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Email</TableHead>
+              <TableHead className="pl-9">Email</TableHead>
               <TableHead>Match</TableHead>
               <TableHead>Alumni</TableHead>
-              <TableHead>Submitted</TableHead>
+              <TableHead className="pr-9">Submitted</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -153,7 +153,7 @@ function SurveyDetail() {
             ) : (
               responses.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                  <TableCell className="text-muted-foreground pl-6">{r.email}</TableCell>
                   <TableCell>
                     {r.alumni_id ? (
                       <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
@@ -176,7 +176,7 @@ function SurveyDetail() {
                       "—"
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground pr-6">
                     {new Date(r.submitted_at).toLocaleDateString()}
                   </TableCell>
                 </TableRow>

@@ -707,7 +707,7 @@ function AlumniList() {
                   />
                 </TableHead>
               )}
-              <TableHead>
+              <TableHead className={!canMutate ? "!pl-9" : ""}>
                 <button
                   type="button"
                   onClick={() => toggleSort("full_name")}
@@ -740,7 +740,7 @@ function AlumniList() {
               </TableHead>
               <TableHead>Tags</TableHead>
               <TableHead className="w-16">{canMutate ? "Mentor" : "Mentorship"}</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-10 !pr-6" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -748,14 +748,14 @@ function AlumniList() {
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={i}>
                   {canMutate && <TableCell className="w-9"><Skeleton className="h-4 w-4" /></TableCell>}
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  <TableCell className={!canMutate ? "!pl-6" : ""}><Skeleton className="h-4 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-36" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                   <TableCell><div className="flex gap-1"><Skeleton className="h-5 w-12 rounded-full" /><Skeleton className="h-5 w-12 rounded-full" /></div></TableCell>
                   <TableCell><Skeleton className="h-5 w-8 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-6 ml-auto rounded" /></TableCell>
+                  <TableCell className="!pr-6"><Skeleton className="h-6 w-6 ml-auto rounded" /></TableCell>
                 </TableRow>
               ))
             ) : rows.length === 0 ? (
@@ -800,7 +800,7 @@ function AlumniList() {
                       />
                     </TableCell>
                   )}
-                  <TableCell className="font-medium">{a.full_name}</TableCell>
+                  <TableCell className={`font-medium${!canMutate ? " !pl-6" : ""}`}>{a.full_name}</TableCell>
                   <TableCell className="text-muted-foreground">{a.email}</TableCell>
                   <TableCell>{a.company ?? "—"}</TableCell>
                   <TableCell>{a.job_title ?? "—"}</TableCell>
@@ -825,7 +825,7 @@ function AlumniList() {
                       )
                     )}
                   </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="!pr-6" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button

@@ -227,20 +227,20 @@ function AuditLogPage() {
         <Table className="text-xs [&_td]:py-2 [&_td]:px-3 [&_th]:py-2 [&_th]:px-3">
           <TableHeader>
             <TableRow>
-              <TableHead>Time</TableHead>
+              <TableHead className="!pl-9">Time</TableHead>
               <TableHead>Actor</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Entity</TableHead>
               <TableHead>Summary</TableHead>
               <TableHead>Severity</TableHead>
-              <TableHead>IP</TableHead>
+              <TableHead className="!pr-9">IP</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell>
+                  <TableCell className="!pl-6">
                     <Skeleton className="h-3 w-28" />
                   </TableCell>
                   <TableCell>
@@ -258,7 +258,7 @@ function AuditLogPage() {
                   <TableCell>
                     <Skeleton className="h-4 w-12 rounded-full" />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="!pr-6">
                     <Skeleton className="h-3 w-20" />
                   </TableCell>
                 </TableRow>
@@ -272,7 +272,7 @@ function AuditLogPage() {
             ) : (
               rows.map((l: AuditLogRow) => (
                 <TableRow key={l.id}>
-                  <TableCell className="text-muted-foreground whitespace-nowrap tabular-nums">
+                  <TableCell className="text-muted-foreground whitespace-nowrap tabular-nums !pl-6">
                     {new Date(l.created_at).toLocaleString(undefined, {
                       month: "short",
                       day: "numeric",
@@ -296,7 +296,7 @@ function AuditLogPage() {
                       {l.severity}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{l.ip_address ?? ""}</TableCell>
+                  <TableCell className="text-muted-foreground !pr-6">{l.ip_address ?? ""}</TableCell>
                 </TableRow>
               ))
             )}

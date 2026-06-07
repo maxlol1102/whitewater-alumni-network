@@ -80,22 +80,22 @@ function GroupsIndex() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="pl-9">Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead className="w-28 text-right">Members</TableHead>
-              <TableHead className="w-36">Created</TableHead>
-              {isAdmin && <TableHead className="w-12" />}
+              <TableHead className={`w-36${!isAdmin ? " pr-9" : ""}`}>Created</TableHead>
+              {isAdmin && <TableHead className="w-12 pr-6" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading &&
               Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                  <TableCell className="pl-6"><Skeleton className="h-4 w-36" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-64" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  {isAdmin && <TableCell />}
+                  <TableCell className={!isAdmin ? "pr-6" : ""}><Skeleton className="h-4 w-24" /></TableCell>
+                  {isAdmin && <TableCell className="pr-6" />}
                 </TableRow>
               ))}
 
@@ -128,18 +128,18 @@ function GroupsIndex() {
                   className="cursor-pointer hover:bg-muted/30"
                   onClick={() => navigate({ to: "/groups/$id", params: { id: g.id } })}
                 >
-                  <TableCell className="font-medium">{g.name}</TableCell>
+                  <TableCell className="font-medium pl-6">{g.name}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {g.description ?? <em className="text-muted-foreground/50">—</em>}
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge variant="secondary">{g.member_count}</Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className={`text-sm text-muted-foreground${!isAdmin ? " pr-6" : ""}`}>
                     {new Date(g.created_at).toLocaleDateString()}
                   </TableCell>
                   {isAdmin && (
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="pr-6" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="icon"

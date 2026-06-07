@@ -83,11 +83,11 @@ function MentorshipPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="pl-9">Name</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Categories</TableHead>
-              <TableHead className="text-right">Contact</TableHead>
+              <TableHead className="text-right pr-9">Contact</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -106,7 +106,7 @@ function MentorshipPage() {
                   .join("");
                 return (
                   <TableRow key={m.id}>
-                    <TableCell>
+                    <TableCell className="pl-6">
                       <div className="flex items-center gap-3">
                         <div className="size-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold shrink-0">
                           {initials}
@@ -125,7 +125,7 @@ function MentorshipPage() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right pr-6">
                       <div className="flex gap-2 justify-end">
                         <Button asChild variant="outline" size="sm">
                           <a href={`mailto:${m.email}`}>

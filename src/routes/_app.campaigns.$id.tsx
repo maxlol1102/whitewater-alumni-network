@@ -298,11 +298,11 @@ function CampaignDetail() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead className="pl-9">Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Sent</TableHead>
                 <TableHead>Opened</TableHead>
-                <TableHead>Submitted</TableHead>
+                <TableHead className="pr-9">Submitted</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -315,7 +315,7 @@ function CampaignDetail() {
               ) : (
                 surveyRecipients.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.name || "—"}</TableCell>
+                    <TableCell className="font-medium pl-6">{r.name || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{r.email}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {r.sent_at ? new Date(r.sent_at).toLocaleDateString() : "—"}
@@ -323,7 +323,7 @@ function CampaignDetail() {
                     <TableCell className="text-muted-foreground">
                       {r.opened_at ? new Date(r.opened_at).toLocaleDateString() : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="pr-6">
                       {r.submitted_at ? (
                         <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 border">
                           {new Date(r.submitted_at).toLocaleDateString()}
